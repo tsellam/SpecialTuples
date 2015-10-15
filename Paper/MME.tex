@@ -1,0 +1,99 @@
+\documentclass{sig-alternate-2013}
+
+\clubpenalty=10000 
+\widowpenalty = 10000
+
+
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{balance}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+\usepackage{enumitem}
+
+\usepackage{color}
+\usepackage{tabulary}
+\usepackage[table]{xcolor}
+
+\usepackage{framed}
+
+\newtheorem{definition}{Definition}
+\newtheorem{problem}{Problem}
+\newtheorem{lemma}{Lemma}
+
+\newcommand{\mf}{\ensuremath{\mathfrak}}
+\newcommand{\rv}{\ensuremath{\mathcal}}
+\newcommand{\rb}{\ensuremath{\mathbf}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+
+
+
+\begin{document}
+
+\title{``Hey Ziggy, What's Up With My Results?!''\\
+Characterizing Tuples With Natural Language}
+
+\numberofauthors{3}
+\author{
+\alignauthor
+Thibault Sellam\\
+       \affaddr{CWI\\Amsterdam, the Netherlands}\\
+       \email{thibault.sellam@cwi.nl}
+\alignauthor
+Emmanuel M\"uller\\
+    \affaddr{HPI\\Potsdam, Germany}\\
+     \email{emmanuel.mueller@kit.edu}
+\alignauthor
+Martin Kersten\\
+       \affaddr{CWI\\Amsterdam, the Netherlands}\\
+       \email{martin.kersten@cwi.nl}
+}
+
+\maketitle
+
+\begin{abstract}
+    This is my abstract.
+\end{abstract}
+
+
+%\category{H.2.8}{Database Applications}{Data mining}
+%\keywords{Data exploration}
+
+\input{Content}
+
+\section{Acknowledgements}
+This publication was supported by the Dutch national program COMMIT.
+
+\bibliographystyle{abbrv}
+%\balance
+\bibliography{MME}
+
+\section*{[Private] Appendix: Ziggy vs.Claude}
+\label{zigvsclaude}
+We may now wonder: if we set $\mf{D}$ as the KL divergence, what is the
+difference between Claude and Ziggy?  Suppose that we ignore the penalty factor
+(we set $\lambda=0$). Then Ziggy tries to maximize:
+$$
+KL\big(\rb{x} | t=0 \ ; \  \rb{x} | t=1 \big)
+$$
+Intuitively, this is the distance between $\rb{x} | t=0$ and $\rb{x} | t=1$.
+On the other hand, Claude maximizes $I(\rb{x}, t)$. With a bit of playing
+around, we can show that this is equivalent to maximizing:
+$$
+    KL\big(\rb{x} | t=0 \ ; \  \rb{x} \big) + 
+        KL\big(\rb{x} | t=1 \ ; \  \rb{x} \big)
+$$
+Here, we are interested in the distance between $\rb{x} | t=i$ and a central
+distribution $\rb{x}$. 
+
+There is a triangular relationship between these expressions:
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.6\columnwidth]{Figures/Triangle}
+  \label{pic:triangle}
+\end{figure}
+
+I wonder if they are not actually equivalent!
+
+\end{document}
