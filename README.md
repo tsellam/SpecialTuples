@@ -1,1 +1,1 @@
-This is the repo the Reverse-EMM project.
+This is the repo for the Reverse-EMM project.
