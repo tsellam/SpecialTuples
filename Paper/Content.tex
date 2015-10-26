@@ -18,7 +18,7 @@ time necessary to inspect each column on after the other. The second one  is
 humans' perception of high dimension spaces:  we cannot reasonably expect a
 user to grasp more than three, maybe four dimensions. 
 
-To cope with this problem, we suggest that the exploration system
+To cope with this problem, we suggest that the exploration system should
 \emph{describes} the tuples, in a language that users can understand. This
 leads us to our problem statements:
 \begin{framed}
@@ -76,33 +76,24 @@ respectively. We illustrate these notations with Figure~\ref{pic:notations}.
 Our model is based on a user-specified \textbf{mass dissimilarity measure}
 $\mf{D}(\rb{D}, \rb{D}')$, which measures the difference between two groups of
 tuples. If the rows of $\rb{D}$ and $\rb{D}'$ are sampled from the same
-distribution $p(\rb{x}) = p'(\rb{x}')$, then $\mf{D}$ is very close to 0. If
+distribution, then $\mf{D}$ is very close to 0. If
 not, $\mf{D}$ grows with the dissimilarity of the distributions.
 Figure~\ref{pic:sameMean} gives an example of the latter case.  Here are some
 possible choices:
 \begin{itemize}
-    \item The hypothesis testing literature provides lots of examples. For
-        instance, if $\rb{\mu}$ and $\rb{\mu}'$ represent the averages of $\rb{D}$ and
-        $\rb{D'}$, and if $\rb{S}$ is an estimate of their pooled covariance
-        matrix, we can set $\mf{D}(\rb{D}, \rb{D}') \equiv (\rb{\mu} -
-        \rb{\mu'})^\top \rb{S}^{-1} ( \rb{\mu} -
-        \rb{\mu'})$. The advantage of this approach is that we know the
-        asymptotic distribution of $\mf{D}(\rb{D}, \rb{D}')$, and thus we can
-        easily test its significance.
+    \item A simple option is to use the distance between centroids (possibly
+        weighted by the observed covariance)
     \item A more general option is to estimate the Kullback-Leibler divergence:
         $\mf{D}(\rb{D}, \rb{D}') \equiv KL(\hat{p}(\rb{x});
         \hat{p}'(\rb{x}'))$, where $\hat{p}(\rb{x})$ and $\hat{p}'(\rb{x}')$
-        are density estimators. This approach can cope with both continuous and
-        categorical variables, and it has firm theoretical foundations.
-    \item With the same notations, an other approach is to define:
-        $\mf{D}(\rb{D}, \rb{D}') \equiv 1 -  \hat{p}(\rb{D}') \cdot
-        \hat{p'}(\rb{D})$. This measure is also general, and it is normalized
-        (it varies between 0 and 1).
+        are density estimators. This approach is more general, as it can cope
+        with both continuous and categorical variables.
+    \item In the next section, we introduce our own mass dissimilarity.
 \end{itemize}
 Knowing this function $\mf{D}$, we can already propose a first, naive,
-formulation of our problem. We want to find groups of variables for which the
+formulation of our problem. \emph{We want to find groups of variables on which the
 distribution of the chosen tuples is different from that of the rest of the
-data.
+data}.
 \begin{problem}
     Consider a distribution dissimilarity function $\mf{D}$ and two integers
     $K$ and $D$. Find the top $K$ distinct views $\rb{D}^i = [\rb{x}^1, \dots,
@@ -191,65 +182,60 @@ We now discuss how to instantiate the function~$\mf{D}$. In principle, we could
 borrow a very general divergence measure from the statistics literature, such
 as the KL-divergence.  Such instantiation, coupled with visualization
 technology, would be perfectly suited to a expert user. Instead, we chose to
-focus on non-experts. We introduce the \textbf{Z-dissimilarity} (Ziggy's
-Dissimilarity), an admittedly naive, but \emph{explainable} mass dissimilarity
+focus on non-experts. We introduce the \textbf{Zig-dissimilarity} (Ziggy's
+Dissimilarity), an \emph{explainable} mass dissimilarity
 measure.
 
-To obtain the Z-dissimilarity between two sets of tuples, we operate as
+To obtain the Zig-dissimilarity between two sets of tuples, we operate as
 follows. First, we compute several univariate dissimilarity indicators $z^1,
 \ldots, z^Z$.  Each of them highlights a specific difference between $\rb{D}_t$
 and $\rb{D}_{\overline{t}}$, based on one-dimension statistics. For instance,
 they describe the difference between means, or the ratio of the variances, for
-each variable $\rb{x}^m$ separately.  We call them \textbf{z-dissimilarities}
-(notice the lower-cased z). In a second step, we compute bivariate
-z-dissimilarities. They describe possible differences with regards to
-dependency: for instance, the regression line between two variables may be
-steeper for our special tuples. Finally, we concatenate all these scores in a
-vector $\rb{z}=(z^1_1, \ldots, z^Z_M)$, and aggregate them using the norm
-$\norm{\rb{z}}_P=\left(\sum_{z \in \rb{z}} w_z \cdot |z|^P \right)^{1/P}$, with
-optional weights $w_z$.
+each variable $\rb{x}^m$ separately.  We call them \textbf{zig-components}.  In
+a second step, we compute bivariate zig-components. These describe possible
+differences with regards to dependency: for instance, the regression line
+between two variables may be steeper for our special tuples. Finally, we
+concatenate all these scores in a vector $\rb{z}=(z^1_1, \ldots, z^Z_M)$, and
+aggregate them using the norm $\norm{\rb{z}}_P=\left(\sum_{z \in \rb{z}} w_z
+\cdot |z|^P \right)^{1/P}$, with optional weights $w_z$.
 
-\textbf{[Maybe there are smarter ways to aggregate the statistics, using e.g.,
-multiple testing. To be looked into.]}
-
-\begin{table}[t!]
+\begin{table*}[t!]
     \centering
-    \begin{tabular}{|c|c|c|c|}
+    \begin{tabular}{|c|c|c|c|l|}
       \hline
-      Property & Type 1 & Type 2 & z-dissimilarity \\
+      Property & Type 1 & Type 2 & Zig-component & Comments\\
       \hline
-      Mean        & Contin.  & - & T-test\\
-      Variance    & Contin.  & - & F-test\\
-      Frequencies & Discrete & - & Chi-square\\
+      Difference of means        & Contin.  & - &
+        $\frac{\mu_T - \mu_{\overline{T}}}{ \sigma_{\overline{T}}}$ (Glass'
+        $\Delta$) &  \\
+    Difference of variances    & Contin.  & - &
+        $ \frac{\sigma_T - \sigma_{\overline{T}}}{ \sigma_{\overline{T}}}$ & \\
+    Difference of Frequencies & Discrete & - & 
+        $\sqrt{\frac{\chi^2}{N(k - 1)}}$ (Cram\'er's V) & \\
       \hline
-      Dependence  & Contin. & Contin & Dif. Correlation\\
-      Dependence  & Contin. & Discrete & Dif. Kom.-Smir.\\
-      Dependence  & Discrete & Discrete & Dif. Chi-square \\
+      Dependence  & Contin. & Contin & $ r_T - r_{\overline{T}} $ & $r$ is the
+      correlation coefficient\\
+      Dependence  & Discrete & Both & $ V_T - V_{\overline{T}} $ & $V$ is
+      Cram\'er' V\\
       \hline
     \end{tabular}
-\caption{Our choice of z-dissimilarites for different data types. In the
-bivariate case we actually compute statistics of statistics.}
+\caption{Our choice of Zig-components for different data types. Note that in
+the bivariate case we actually compute statistics of statistics.}
     \label{tab:dissim}
-\end{table}
+\end{table*}
 
-How should we chose our z-dissimilarites? Each indicator should describe an
-interpretable property of the data. Also, for meaningful results, the
-dissimilarities should be normalized. We selected a battery of well-known test
-statistics from the literature, described in Table~\ref{tab:dissim}. In the
-univariate case, we use these test without any modification. In the bivariate
-case, we derive \emph{statistics of statistics}. Consider for instance a pair
-of continuous variables. We are not interested in the correlation between these
-columns as such. Instead, we are interested in its variation when we replace
-$\rb{D}_{t}$ by $\rb{D}_{\overline{t}}$. Hence, the z-dissimilarity reports the
-\emph{difference} between the correlations, not the correlations themselves. We can
-obtain the asymptotic distribution of this statistic analytically.
-[\textbf{or at least I hope so}]
+We report the z-component we used in our study in Table~\ref{tab:dissim}.  Each
+component describes an interpretable property of the data.  Most of them come
+from the classic statistics literature, where they are referred to as
+\emph{effect sizes}. Their value is 0 if there is not difference between the
+full database and the tuple of interest. Their absolute value varies with the
+magnitude of the effect.
 
 Observe that we compute univariate, then bivariate statistics. In principle, we
 could test spaces with more dimensions. We chose not to do so, for two
-practical reasons. First, we suppose that relationships in three
-dimensions or more are harder to convey and understand in natural language.
-Second, the number of relationships to be tested grows exponentially with the
+practical reasons. First, we suppose that relationships in three dimensions or
+more are harder to convey and understand in natural language.  Second, the
+number of relationships to be tested grows exponentially with the
 dimensionality of the test (up to tests of dimension $M/2$). This harms Ziggy's
 runtime, and it leads to much longer explanations.
 
@@ -257,14 +243,20 @@ runtime, and it leads to much longer explanations.
 \subsection{Dependency Measure}
 \label{sec:dependency}
 
-We now discuss how to instantiate the dependency measure~$\mf{S}$. As discussed
-in Section~\ref{sec:problem}, we face a large choice. Our recommendations
-depend on the computing resources available. If those are plentiful, we suggest
-to use a general dependency measure such as the Mutual Information. The
-advantage of this option is that it captures both linear and non-linear
-relationships. Under scarcity, we suggest to use a measure based on the linear
-correlation. We prefer this approach because it reuses intermediate results necessary to
-compute the Z-distance: we obtain the pairwise correlations ``for free''.
+We now discuss how to instantiate the dependency measure~$\mf{S}$. We chose
+following:
+\begin{gather}
+    \mf{S}(\rb{D}, \rb{D'}) = \max_{d \neq d'} \mf{s}(d, d'), \text{where:}\\
+         \mf{s}(d, d')= \begin{cases}
+             r(d, d') \text{(correlation) if $d$ and $d'$ are continuous}\\
+             V(d, d') \text{(Cram\'er's V) otherwise}
+         \end{cases}
+\end{gather}
+We chose this measure for two reasons. First, it is easily interpretable, as
+relies on well-known statistics. Second, it is computationally efficient.
+We get the correlations ``for free'', because we need to compute them
+anyway for the Zig-dissimilarities. Besides, the \emph{max} function lets us
+explore the search space rapidly, as we will show in the following sections.
 
 
 \section{Model Validation}
@@ -288,11 +280,6 @@ $\rb{D}_{\overline{t}}$. We then measure the new distance $d=\mf{D}\big(
 $B$ times, and obtain the results $d^1, \ldots, d^B$. We compare them to our
 initial measurement $d$. If $p\%$ samples are greater than $d^0$, then our
 p-value is approximately $p$.
-
-\textbf{[Problem: how can we quickly reshuffle the rows of
-$\rb{D}$? Maybe a fast solution is to use random hash functions. To be
-looked into, there may be a nice secondary contribution there!]}
-
 
 
 
