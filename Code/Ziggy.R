@@ -10,9 +10,13 @@ data <- read.arff("~/Data/Files/crime/communities.arff")
 data_check <- data
 #data <- rbind(data, data, data, data, data)
 
-for (j in 20:50)
+for (j in 20:30)
     data[[j]] <- as.character(cut(data[[j]], 3))
 selection <- data$ViolentCrimesPerPop > 0.7
+
+classes <- sapply(data, function(col) class(col))
+#data <- data[, !classes %in% c('factor','character')]
+#data <- data[, !classes %in% c('numeric')]
 
 check_group <- function(col_set, dataset = data){
 
@@ -84,6 +88,16 @@ check_group <- function(col_set, dataset = data){
 #############################
 preprocess <- function(data, nbins=4){
     cat("Preprocessing in progress...")
+
+
+   sparse <- sapply(data, function(col)
+      sum(is.na(col)) > MIN_SPARSITY * length(col)
+   )
+   if (any(sparse)){
+      cat("Removing", sum(sparse), "sparse columns\n")
+      data <- data[!sparse]
+   }
+
     types <- sapply(data, class)
 
     # Trivial case
@@ -98,16 +112,21 @@ preprocess <- function(data, nbins=4){
         data[[col]] <- factor(data[[col]])
 
    # Doing additions
-   num_col  <-  names(types[types %in% c("numeric")])
-   num_data <- data[,num_col]
-   for (col in num_col)
-      num_data[[col]] <- cut(data[[col]], nbins)
-   names(num_data) <- paste0("!!", names(num_data))
-   data <- cbind(data, num_data)
-
+   if (any(types == 'numeric')){
+      num_col  <-  names(types[types %in% c("numeric")])
+      num_data <- data[,num_col]
+      for (col in num_col)
+         num_data[[col]] <- cut(data[[col]], nbins)
+      names(num_data) <- paste0(names(num_data), '!!NUM')
+      data <- cbind(data, num_data)
+   }
    cat("Done!\n\n")
    return(data)
 }
+
+
+
+
 
 ##############
 # Statistics #
@@ -144,7 +163,7 @@ compute_uni_stats <- function(data, exclude_cols = c()){
 
    # Then categorical values
    cat("Computing univariate stats for categorical values\n")
-   tru_cat_cols <- cat_cols[!grepl('!!', cat_cols)]
+   tru_cat_cols <- cat_cols[!grepl('!!NUM$', cat_cols)]
    histograms   <- lapply(data[,tru_cat_cols], function(col) table(col))
    #histograms   <- lapply(tru_cat_cols, function(col) bigtable(data, col))
    stats_cat_uni <- data_frame(column = tru_cat_cols,
@@ -158,6 +177,10 @@ compute_uni_stats <- function(data, exclude_cols = c()){
 
 # Updates univariate statics for numeric data
 rollback_num_uni <- function(all_num_uni, sel_num_uni){
+
+   # Trivial cases
+   if (nrow(all_num_uni) < 1 | nrow(sel_num_uni) < 1) return(all_num_uni)
+
    cat("Un-updates preprocessed univariate numeric statistics\n")
    exc_num_uni <- select(sel_num_uni,
                             column,
@@ -183,6 +206,10 @@ rollback_num_uni <- function(all_num_uni, sel_num_uni){
 
 # Updates univariate statistics for categorical data
 rollback_cat_uni <- function(all_cat_uni, sel_cat_uni){
+
+   # Trivial cases
+   if (nrow(all_cat_uni) < 1 | nrow(sel_cat_uni) < 1) return(all_cat_uni)
+
    cat("Un-updates preprocessed univariate categorical statistics\n")
    exc_cat_uni <- select(sel_cat_uni,
                             column,
@@ -232,6 +259,23 @@ variance_test <- function(var1, var2, n1, n2){
 }
 
 scores_num_uni <- function(sel_num_uni, exc_num_uni){
+
+   # Trivial cases
+   if (nrow(sel_num_uni) < 1 | nrow(exc_num_uni) < 1)
+      return(data.frame(
+         'column' = character(0),
+         'sel_count' = numeric(0),
+         'sel_mean' = numeric(0),
+         'sel_variance' = numeric(0),
+         'exc_count' = numeric(0),
+         'exc_mean' = numeric(0),
+         'exc_variance' = numeric(0),
+         'p_mean_diff' = numeric(0),
+         'm_mean_diff' = numeric(0),
+         'p_variance_ratio' = numeric(0),
+         'm_variance_ratio' = numeric(0)
+   ))
+
    cat("Computing two-population univariate tests, numerical data\n")
    side_by_side <- select(sel_num_uni,
                     column,
@@ -278,27 +322,36 @@ cat_single_test_magn <- function(hists1, hists2){
 
       # Pearson's test
       P <- 1 - pchisq(X2, length(hist2) - 1)
-      # Cramer's V... or at least I hope :)
-      M <- sqrt( X2 / ((length(hist2) - 1) *  sum(hist1)))
 
-      c('p_chi2_test' = P, 'm_chi2_test' = M, 'X2'=X2)
+      # Cramer's V, inspired by the lsr package
+      min_E <- which.min(E)
+      dev <- E
+      dev[min_E] <- sum(hist1) - dev[min_E]
+      max_X2 <- sum(dev^2/E)
+      M <- sqrt(X2/max_X2)
+
+     #M <- sqrt(X2/(sum(hist1) * (length(hist1) - 1)))
+
+      c('p_chi2_test' = P, 'm_CramersV' = M, 'X2'=X2)
 
    }, hists1, hists2)
-
-#    checks <- sapply(1:length(hists2), function(i, hists1, hists2){
-#       hist1 <- hists1[[i]]
-#       hist2 <- hists2[[i]]
-#
-#       P <- hist2 / sum(hist2)
-#       out <- chisq.test(hist1, p=P)
-#       c('p_check' = out$p.value, 'X_check' = out$statistic)
-#    }, hists1, hists2)
-#    browser()
 
    out
 }
 
 scores_cat_uni <- function(sel_cat_uni, exc_cat_uni){
+
+   # Trivial cases
+   if (nrow(sel_cat_uni) < 1 | nrow(exc_cat_uni) < 1)
+      return(data.frame(
+         'column' = character(0),
+         'sel_hist' = list(),
+         'exc_hist' = list(),
+         'p_chi2_test' = numeric(0),
+         'm_CramersV' = numeric(0),
+         'X2' = numeric(0)
+      ))
+
    cat("Computing two-population univariate tests, categorical data\n")
 
    side_by_side <- sel_cat_uni %>%
@@ -312,13 +365,60 @@ scores_cat_uni <- function(sel_cat_uni, exc_cat_uni){
    stats
 }
 
+
+
+
+
+
 ########################
 # Bivariate statistics #
 ########################
 #------------------------------#
 # Single Population Statistics #
 #------------------------------#
-o_calc_cramer_V <- function(cross_tabs){
+compute_bi_stats_num <- function(data, single_stats){
+   cat("Computing correlations for numeric values\n")
+
+   # Checking sparse columns
+   sparse_cols <- sapply(data, function(c)
+      sum(is.na(c)) / nrow(data) > MIN_SPARSITY
+   )
+   if (any(sparse_cols))
+      warning("Lots of missing values, pairwise correlations may be off\n")
+
+   # Computes
+   cov_mat <- cov(data, use = "pairwise.complete.obs")
+
+   # Formats
+   stats_num_bi <- data.frame(cov_mat) %>%
+      cbind(
+         data.frame(column1 = row.names(cov_mat),
+                    stringsAsFactors = F)) %>%
+      gather(column2, covariance, -column1) %>%
+      mutate(column2 = as.character(column2)) %>%
+      select(column1, column2, covariance) %>%
+      filter(column1 < column2)
+
+   # Augments with single stats
+   stats_num_bi <- stats_num_bi %>%
+      inner_join(single_stats, c("column1"="column")) %>%
+      rename(col1_count = count,
+             col1_mean  = mean,
+             col1_variance = variance) %>%
+      inner_join(single_stats, c("column2"="column")) %>%
+      rename(col2_count    = count,
+             col2_mean     = mean,
+             col2_variance = variance) %>%
+      mutate(count = pmin(col1_count, col2_count)) %>%
+      select(-col1_count, -col2_count)
+
+}
+
+
+
+
+
+calc_cramer_V <- function(cross_tabs){
    sapply(cross_tabs, function(tab){
 
       # First, filter our empty rows/columns
@@ -341,15 +441,15 @@ o_calc_cramer_V <- function(cross_tabs){
          )
 
       # Computes the actual stats
-      res <- chisq.test(tab)
+      res <- suppressWarnings(chisq.test(tab))
       V   <- sqrt(res$statistic / (total * V_norm))
 
       # Checks Chi-squared assumptions
-       p_chi2 <- if (sum(tab < 5) > 0.3*length(tab)){
-          NA
-       } else {
-          res$p.value
-       }
+      p_chi2 <- if (sum(tab < 5) > 0.3*length(tab)){
+         NA
+      } else {
+         res$p.value
+      }
 
       c('p_chi2'    = p_chi2,
         'Chi_chi2'  = res$statistic,
@@ -357,13 +457,59 @@ o_calc_cramer_V <- function(cross_tabs){
         'df'        = res$parameter,
         'V_norm'    = V_norm,
         'count'     = total
-        )
+      )
    })
 }
-#calc_cramer_V <- cmpfun(o_calc_cramer_V, c('optimize'=3))
-calc_cramer_V <- o_calc_cramer_V
 
-compute_bi_stats <- function(data, uni_stats, exclude_cols = NULL){
+compute_bi_stats_cat <- function(data){
+   cat("Computing contingency tables for categorical values\n")
+
+   # Prepares data structure
+   cat_cols <- sort(names(data))
+   stats_cat_bi <- combn(cat_cols, 2)
+   stats_cat_bi <- as.data.frame(t(stats_cat_bi), stringsAsFactors = F)
+   names(stats_cat_bi) <- c('column1', 'column2')
+   stats_cat_bi <- stats_cat_bi %>% filter(!(grepl('!!NUM$', column1) &
+                                             grepl('!!NUM$', column2)))
+
+   tables <- apply(stats_cat_bi, 1, function(cols){
+      table(data[,c(cols[1], cols[2])])
+   })
+   stats_cat_bi[['cross_tabs']] <- tables
+
+#
+#    cat_cols <- sort(names(data))
+#    pure_cat_cols <- cat_cols[!grepl("!!", cat_cols)]
+#
+#    # Big calculations
+#    count_tables <- lapply(cat_cols, function(col1){
+#       lapply(pure_cat_cols[pure_cat_cols > col1], function(col2){
+#          table(data[,c(col1, col2)])
+#       })
+#    })
+#
+#    # Formatting
+#    count_tables <- count_tables[!sapply(count_tables, is.null)]
+#    count_tables <- unlist(count_tables, recursive = F)
+#    col_names <- sapply(count_tables, function(tab){
+#       names(attributes(tab)$dimnames)
+#    })
+#    stats_cat_bi <- data.frame(t(col_names), stringsAsFactors = F)
+#    names(stats_cat_bi) <- c('column1', 'column2')
+#    stats_cat_bi[['cross_tabs']] <- count_tables
+
+   # Augments with Chi-2 tests
+   add_stats <- t(calc_cramer_V(stats_cat_bi$cross_tabs))
+   colnames(add_stats) <- c('p_Chi2', 'Chi2', 'CramersV', 'df', 'V_norm_fact', 'count')
+   stats_cat_bi <- cbind(stats_cat_bi, add_stats)
+}
+
+
+
+
+
+compute_bi_stats <- function(data, uni_stats,
+                             exclude_cols = NULL, empty = FALSE){
    # Simple sanity checks
    if (!is.data.frame(data))
       stop("Error - input is not a DF")
@@ -380,70 +526,33 @@ compute_bi_stats <- function(data, uni_stats, exclude_cols = NULL){
    num_cols <- names(data_types[data_types == "numeric"])
    cat_cols <- names(data_types[data_types == "factor"])
 
-   # FIRST, NUMERIC VALUES
-   cat("Computing correlations for numeric values\n")
+   # First, numeric values
+   stats_num_bi <- if(length(num_cols) > 0 & !empty)
+      compute_bi_stats_num(data[num_cols], uni_stats$stats_num_uni)
+   else
+      data.frame(
+         'column1' = character(0),
+         'column2' = character(0),
+         'covariance' = numeric(0),
+         'col1_mean' = numeric(0),
+         'col1_variance' = numeric(0),
+         'col2_mean' = numeric(0),
+         'col2_variance' = numeric(0),
+         'count' = numeric(0)
+      )
 
-   # Checking sparse columns
-   sparse_cols <- sapply(data[,num_cols], function(c)
-      sum(is.na(c)) / nrow(data) > MIN_SPARSITY
-   )
-   if (any(sparse_cols))
-      warning("Lots of missing values, pairwise correlations may be off\n")
-
-   # Computes
-   cov_mat <- cov(data[num_cols], use = "pairwise.complete.obs")
-
-   # Formats
-   stats_num_bi <- data.frame(cov_mat) %>%
-                   cbind(
-                      data.frame(column1 = row.names(cov_mat),
-                                 stringsAsFactors = F)) %>%
-                   gather(column2, covariance, -column1) %>%
-                   mutate(column2 = as.character(column2)) %>%
-                   select(column1, column2, covariance) %>%
-                   filter(column1 < column2)
-
-   # Augments with single stats
-   stats_num_bi <- stats_num_bi %>%
-                  inner_join(uni_stats$stats_num_uni, c("column1"="column")) %>%
-                  rename(col1_count = count,
-                         col1_mean  = mean,
-                         col1_variance = variance) %>%
-                  inner_join(uni_stats$stats_num_uni, c("column2"="column")) %>%
-                  rename(col2_count    = count,
-                         col2_mean     = mean,
-                         col2_variance = variance) %>%
-                  mutate(count = pmin(col1_count, col2_count)) %>%
-                  select(-col1_count, -col2_count)
-
-
-   # AND THEN, CATEGORICAL VALUES
-   cat("Computing contingency tables for categorical values\n")
-   cat_cols <- sort(cat_cols, decreasing = T)
-
-   # Big calculations
-   count_tables <- lapply(1:(length(cat_cols) - 1), function(j1){
-      col1 <- cat_cols[j1]
-      if (grepl('!!*', col1)) return(NULL)
-      lapply((j1+1):length(cat_cols), function(j2){
-         table(data[,cat_cols[c(j1,j2)]])
-      })
-   })
-
-   # Formatting
-   count_tables <- count_tables[!sapply(count_tables, is.null)]
-   count_tables <- unlist(count_tables, recursive = F)
-   col_names <- sapply(count_tables, function(tab){
-      names(attributes(tab)$dimnames)
-   })
-   stats_cat_bi <- data.frame(t(col_names), stringsAsFactors = F)
-   names(stats_cat_bi) <- c('column2', 'column1')
-   stats_cat_bi[['cross_tabs']] <- count_tables
-
-   # Augments with Chi-2 tests
-   add_stats <- t(calc_cramer_V(count_tables))
-   colnames(add_stats) <- c('p_Chi2', 'Chi2', 'CramersV', 'df', 'V_norm_fact', 'count')
-   stats_cat_bi <- cbind(stats_cat_bi, add_stats)
+   # Then, categorical data
+   stats_cat_bi <- if (length(cat_cols) > 0 & !empty)
+      compute_bi_stats_cat(data[,cat_cols])
+   else data.frame('column1' = character(0),
+                 'column2' = character(0),
+                 'cross_tabs' = list(),
+                 'p_Chi2' = numeric(0),
+                 'Chi2' = numeric(0),
+                 'CramersV'= numeric(0),
+                 'df'= numeric(0),
+                 'V_norm_fact'= numeric(0),
+                 'count'= numeric(0))
 
    return(list(
        stats_num_bi = stats_num_bi,
@@ -451,11 +560,22 @@ compute_bi_stats <- function(data, uni_stats, exclude_cols = NULL){
     ))
 }
 
+
+
+
+
+
+
+
+
 rollback_num_bi  <- function(all_num_bi, sel_num_bi,
                              sel_num_uni, exc_num_uni){
 
-   cat("Un-updates preprocessed bivariate numeric statistics\n")
+   # Trivial case
+   if (nrow(all_num_bi) < 1 | nrow(all_num_bi) < 1)
+      return(all_num_bi)
 
+   cat("Un-updates preprocessed bivariate numeric statistics\n")
    exc_num_bi <- sel_num_bi %>%
                   rename(sel_covariance = covariance,
                          sel_count = count,
@@ -498,6 +618,11 @@ rollback_num_bi  <- function(all_num_bi, sel_num_bi,
 }
 
 rollback_cat_bi <- function(all_cat_bi, sel_cat_bi){
+
+   # Trivial case
+   if (nrow(all_cat_bi) < 1 | nrow(all_cat_bi) < 1)
+      return(all_cat_bi)
+
    cat("Un-updates preprocessed bivariate categorical statistics\n")
 
    exc_cat_bi <- sel_cat_bi %>%
@@ -517,7 +642,30 @@ rollback_cat_bi <- function(all_cat_bi, sel_cat_bi){
    return(exc_cat_bi)
 }
 
+
+
+
+
+
+
+#----------------------------#
+# Two Populations Statistics #
+#----------------------------#
 scores_num_bi <- function(sel_num_bi, exc_num_bi){
+
+   # Trivial case
+   if (nrow(sel_num_bi) < 1 | nrow(exc_num_bi) < 1)
+      return(data.frame(
+         'column1' = character(0),
+         'column2' = character(0),
+         'sel_corr' = numeric(0),
+         'exc_corr' = numeric(0),
+         't_corr_sel' = numeric(0),
+         't_corr_exc' = numeric(0),
+         'm_corr_diff' = numeric(0),
+         't_corr_diff' = numeric(0)
+      ))
+
 
    cat("Computing two-population bivariate tests, numerical data\n")
    stats <- sel_num_bi %>%
@@ -547,7 +695,11 @@ scores_num_bi <- function(sel_num_bi, exc_num_bi){
                    sel_corr, exc_corr, t_corr_sel, t_corr_exc,
                    m_corr_diff, t_corr_diff)
 
+   stats
 }
+
+
+
 
 
 test_Chi2_ratio <- function(V_sel, V_exc, df_sel, df_exc,
@@ -568,6 +720,19 @@ test_Chi2_ratio <- function(V_sel, V_exc, df_sel, df_exc,
 
 scores_cat_bi <- function(sel_cat_bi, exc_cat_bi){
 
+   # Trivial case
+   if (nrow(sel_cat_bi) < 1 | nrow(exc_cat_bi) < 1)
+      data.frame(
+         'column1' = character(0),
+         'column2' = character(0),
+         'sel_CramersV' = numeric(0),
+         'sel_p_Chi2' = numeric(0),
+         'exc_CramersV' = numeric(0),
+         'exc_p_Chi2' = numeric(0),
+         'm_CramersV_diff' = numeric(0),
+         't_CramersV_diff' = numeric(0)
+      )
+
    cat("Computing two-population bivariate tests, categorical data\n")
    stats <- sel_cat_bi %>%
             inner_join(exc_cat_bi, c('column1', 'column2'))
@@ -578,12 +743,26 @@ scores_cat_bi <- function(sel_cat_bi, exc_cat_bi){
                                                 df.x, df.y,
                                                 V_norm_fact.x, V_norm_fact.y,
                                                 count.x, count.y))
+
+   select(stats,
+          column1, column2,
+          sel_CramersV = CramersV.x,
+          sel_p_Chi2 = p_Chi2.x,
+          exc_CramersV = CramersV.y,
+          exc_p_Chi2 = p_Chi2.y,
+          m_CramersV_diff,
+          t_CramersV_diff)
+
 }
 
-#########################
-# Main comment function #
-#########################
-comment <- function(selection, data, offline_uni_stats, offline_bi_stats){
+
+
+
+
+##########################
+# Wrapper for statistics #
+##########################
+zig_score <- function(selection, data, offline_uni_stats, offline_bi_stats){
 
    # Sanity checks
    if(!is.logical(selection) || !is.data.frame(data) ||
@@ -592,7 +771,7 @@ comment <- function(selection, data, offline_uni_stats, offline_bi_stats){
 
 
    # Materializes selection and compute statistics
-   cat("\nMaterializes selection... ")
+   cat("\nMaterializes selection...\n")
    sel_data  <- data[selection,]
    t_sparse_columns <- sapply(sel_data, function(col)
       sum(is.na(col)) > MIN_SPARSITY
@@ -643,13 +822,237 @@ comment <- function(selection, data, offline_uni_stats, offline_bi_stats){
    zig_num_bi <- scores_num_bi(sel_num_bi, exc_num_bi)
    zig_cat_bi <- scores_cat_bi(sel_cat_bi, exc_cat_bi)
 
+   return(list(
+      zig_num_uni = zig_num_uni,
+      zig_cat_uni = zig_cat_uni,
+      zig_num_bi  = zig_num_bi,
+      zig_cat_bi  = zig_cat_bi
+   ))
 }
 
-# Workflow
+########################
+# Aggregation function #
+########################
+zig_aggregate <- function(zig_components, zig_coef){
+
+    if (!length(zig_components) == 4 | !is.numeric(zig_coef))
+       stop("Wrong arguments to aggregation function")
+
+      cat("* Aggregates all zig-components\n")
+
+      #Single, numerical zig components
+      is <- names(zig_coef) %in% names(zig_components$zig_num_uni)
+      coef <- zig_coef[is]
+
+      zig_mat <- zig_components$zig_num_uni[,names(coef), drop = F]
+      zig_mat <- abs(scale(zig_mat))
+      zig <- zig_mat %*% coef
+      zig_components$zig_num_uni <- mutate(zig_components$zig_num_uni,
+                                           zig = as.numeric(zig))
+
+
+      # Single, categorical components
+      is <- names(zig_coef) %in% names(zig_components$zig_cat_uni)
+      coef <- zig_coef[is]
+
+      zig_mat <- zig_components$zig_cat_uni[,names(coef), drop = F]
+      zig_mat <- abs(scale(zig_mat))
+      zig <- zig_mat %*% coef
+      zig_components$zig_cat_uni <- mutate(zig_components$zig_cat_uni,
+                                           zig = as.numeric(zig))
+
+
+      # Bivariate, numerical zig components
+      # Finds relevant coefficients
+      is <- names(zig_coef) %in% names(zig_components$zig_num_bi)
+      coef <- zig_coef[is]
+
+      # Computes dot-product
+      zig_mat <- zig_components$zig_num_bi[,names(coef), drop = F]
+      zig_mat <- abs(scale(zig_mat))
+      zig <- zig_mat %*% coef
+      zig_components$zig_num_bi <- mutate(zig_components$zig_num_bi,
+                                          zig = as.numeric(zig))
+
+
+
+      # Bivariate, categorical zig components
+      is <- names(zig_coef) %in% names(zig_components$zig_cat_bi)
+      uni_cat_cols <- zig_coef[is]
+
+      zig_mat <- zig_components$zig_cat_bi[,names(uni_cat_cols), drop = F]
+      zig_mat <- abs(scale(zig_mat))
+      zig <- zig_mat %*% zig_coef[uni_cat_cols]
+      zig_components$zig_cat_bi <- mutate(zig_components$zig_cat_bi,
+                                          zig = as.numeric(zig))
+
+
+      zig_components
+}
+
+########################
+# View search function #
+########################
+search_views <- function(K, D, zig_scores,
+                         offline_depdendencies, dep_threshold = 0.5,
+                         fill_NAs = TRUE){
+   if (!length(zig_scores) == 4 |
+       !is.numeric(K)  | K < 1 |
+       !is.numeric(D)  | D < 1 )
+      stop("Wrong arguments to view search function")
+
+
+   cat("* View search\n")
+
+   # Prepares Zig-Scores
+   uni_zigs <- rbind(
+      select(zig_scores$zig_num_uni, column, zig),
+      select(zig_scores$zig_cat_uni, column, zig)
+   )
+   bi_zigs <- rbind(
+      select(zig_scores$zig_num_bi, column1, column2, zig),
+      select(zig_scores$zig_cat_bi, column1, column2, zig) %>%
+         mutate(column1 = sub('!!NUM$', '', column1),
+                column2 = sub('!!NUM$', '', column2))
+   )
+
+   # Prepares dependencies
+   num_dependencies <- offline_depdendencies$stats_num_bi %>%
+         mutate(dependency = abs(covariance/
+                                 sqrt(col1_variance * col2_variance))) %>%
+         select(column1, column2, dependency)
+   cat_dependencies <- offline_depdendencies$stats_cat_bi %>%
+         select(column1, column2, dependency = abs(CramersV))
+   dependencies <- rbind(num_dependencies, cat_dependencies)
+
+   # Trivial case
+   if (D == 1){
+      view_cols <- uni_zigs %>%
+                     arrange(desc(zig)) %>%
+                     slice(1:K)
+   }
+
+   if (fill_NAs){
+      # Fills missing values
+      all_combis <- combn(sort(uni_zigs$column), 2)
+      all_combis <- as.data.frame(t(all_combis), stringsAsFactors = F)
+      colnames(all_combis) <- c('column1', 'column2')
+      bi_zigs <- all_combis %>%
+                  left_join(bi_zigs, by=c('column1', 'column2'))
+      bi_zigs$zig[is.na(bi_zigs$zig)] <- 0
+   }
+
+   # Generates list of candidate edges
+   candidates <- bi_zigs %>%
+                  inner_join(uni_zigs, by = c('column1' = 'column')) %>%
+                  rename(bi_zig = zig.x, zig1 = zig.y) %>%
+                  inner_join(uni_zigs, by = c('column2' = 'column')) %>%
+                  rename(zig2 = zig)
+
+
+   zigs  <- list()
+   views <- list(character(0))
+
+   for (k in 1:K){
+
+      zig  <- 0
+      view <- list()
+
+      # Removes redundant candidates
+      all_cols <- data_frame('column' = unlist(views))
+      left_exclude <- all_cols %>%
+                     inner_join(dependencies, by = c('column' = 'column1')) %>%
+                     filter(dependency > dep_threshold) %>%
+                     select(column = column2)
+
+      right_exclude <- all_cols %>%
+                     inner_join(dependencies, by = c('column' = 'column2')) %>%
+                     filter(dependency > dep_threshold) %>%
+                     select(column = column1)
+
+      all_exclude <- rbind_list(left_exclude, right_exclude, all_cols)
+
+      candidates <- candidates %>%
+         anti_join(all_exclude, by=c('column1'='column')) %>%
+         anti_join(all_exclude, by=c('column2'='column'))
+
+      if (nrow(candidates) < D){
+         cat("Not enough columns to continue the exploration\n")
+         break
+      }
+
+
+      # Body of the search
+      for (d in 1:D){
+
+         if (length(view) == 0){
+            selection <- candidates %>%
+                        mutate(zig = bi_zig + zig1 + zig2 ) %>%
+                        filter(zig == max(zig, na.rm = T)) %>%
+                        select(column1, column2, zig)
+
+            view_cols <- as.character(selection[1, c('column1', 'column2')])
+            view <- data.frame('column'  = view_cols, stringsAsFactors = F)
+            zig  <- as.numeric(selection[1,'zig'])
+            next
+         }
+
+         left_edges <- candidates %>%
+                           semi_join(view, by = c('column1' = 'column')) %>%
+                           anti_join(view, by = c('column2' = 'column')) %>%
+                           group_by(column = column2) %>%
+                           summarize(delta_bi_zig  = sum(bi_zig),
+                                     delta_uni_zig = first(zig2))
+
+         right_edges <- candidates %>%
+                           semi_join(view, by = c('column2' = 'column')) %>%
+                           anti_join(view, by = c('column1' = 'column')) %>%
+                           group_by(column = column1) %>%
+                           summarize(delta_bi_zig  = sum(bi_zig),
+                                     delta_uni_zig = first(zig1))
+
+         all_edges <- rbind_list(left_edges, right_edges) %>%
+                           group_by(column) %>%
+                           summarize(delta_zig =
+                                        sum(delta_bi_zig) + first(delta_uni_zig)) %>%
+                           top_n(1, delta_zig)
+
+         view <- all_edges %>%
+                  select(column) %>%
+                  rbind_list(view)
+
+         zig <- zig + all_edges$delta_zig[[1]]
+      }
+
+    zigs[[k]]  <- zig
+    views[[k]] <- view
+   }
+
+   print(views)
+
+}
+
+############
+# WORKFLOW #
+############
+
+ zig_coefficients <- c(
+    'm_mean_diff' = 0.7,
+    'm_variance_ratio' = 0.3,
+    'm_CramersV' = 1,
+    'm_corr_diff' = 1,
+    'm_CramersV_diff' = 1
+)
+
 data  <- preprocess(data)
 CLOCK1 <- proc.time()['elapsed']
+
 offline_uni_stats   <- compute_uni_stats(data)
 offline_bi_stats <- compute_bi_stats(data, offline_uni_stats)
-comments <- comment(selection, data, offline_uni_stats, offline_bi_stats)
+zig_components <- zig_score(selection, data, offline_uni_stats,
+                            offline_bi_stats)
+zig_scores <- zig_aggregate(zig_components, zig_coefficients)
+views <- search_views(5, 3, zig_scores, offline_bi_stats)
+
 CLOCK2 <- proc.time()['elapsed']
 print(CLOCK2 - CLOCK1)
