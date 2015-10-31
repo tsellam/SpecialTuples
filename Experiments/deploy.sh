@@ -54,18 +54,19 @@ tail -f nohup.out
 
 ssh cwi
 ssh rocks028
-killall R
 
+killall R
 cd /scratch/sellam/mme
 git checkout -- .
 git pull -f
 
-cd code/Rlib
+
+cd /scratch/sellam/mme/Experiments/Baselines/Rlib
 R CMD SHLIB info_theory.c
 
-cd /scratch/sellam/MME/experiments
+cd /scratch/sellam/mme/Experiments
 rm nohup.out
-nohup ./wrap_view_experiments.sh &
+nohup ./wrap_experiments.sh &
 tail -f nohup.out
 
 

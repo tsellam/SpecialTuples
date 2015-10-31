@@ -31,7 +31,7 @@ cat(paste0(out_headers, collapse="\t"), file = file_out)
 
 if (test_mode){
    file_list <- #file_list[1] #"communities.arff"
-   file_list <- "insurance.arff"
+   file_list <- "magic.arff"
 }
 
 wrapper <- function(..., score_function, algo){

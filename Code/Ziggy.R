@@ -88,13 +88,20 @@ preprocess <- function(data,  nbins=4){
     cat("Preprocessing in progress...")
 
 
-   sparse_or_dense <- sapply(data, function(col)
-      sum(is.na(col)) > MIN_SPARSITY * length(col) |
+   sparse <- sapply(data, function(col)
+      sum(is.na(col)) > MIN_SPARSITY * length(col)
+   )
+   if (any(sparse)){
+      cat("Removing", sum(sparse), "sparse columns\n")
+      data <- data[!sparse]
+   }
+   flat <- sapply(data, function(col)
+      (is.factor(col) | is.character(col)) &
          length(unique(col)) > 1024
    )
-   if (any(sparse_or_dense)){
-      cat("Removing", sum(sparse_or_dense), "untractable columns\n")
-      data <- data[!sparse_or_dense]
+   if (any(flat)){
+      cat("Removing", sum(flat), "flat columns\n")
+      data <- data[!flat]
    }
 
     types <- sapply(data, class)
