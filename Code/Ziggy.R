@@ -980,7 +980,7 @@ search_views <- function(K, D, zig_scores,
       view    <- data_frame('column' =  character())
       old_columns  <- data_frame('column' = unlist(views))
       #old_columns  <- data_frame('column' = unlist(views))
-      max_sum_dependency <- nrow(old_columns) * D * soft_dep_threshold
+      #max_sum_dependency <- nrow(old_columns) * D * soft_dep_threshold
 
       # Removes redundant candidates - hard threshold
       if (!is.null(hard_dep_threshold)){
@@ -1012,39 +1012,48 @@ search_views <- function(K, D, zig_scores,
          left_dependencies <- dependencies %>%
             inner_join(old_columns, by = c('column1' = 'column')) %>%
             group_by(column2) %>%
-            summarise(sum_dependency = sum(dependency)) %>%
-            select(column = column2, sum_dependency)
+            summarise(sum_dependency = sum(dependency),
+                      n_dependencies = length(dependency)) %>%
+            select(column = column2, sum_dependency, n_dependencies)
 
          right_dependencies <- dependencies %>%
             filter(column1 != column2) %>%
             inner_join(old_columns, by = c('column2' = 'column')) %>%
             group_by(column1) %>%
-            summarise(sum_dependency = sum(dependency)) %>%
-            select(column = column1, sum_dependency)
+            summarise(sum_dependency = sum(dependency),
+                      n_dependencies = length(dependency)) %>%
+            select(column = column1, sum_dependency, n_dependencies)
 
          all_dep <- rbind_list(left_dependencies, right_dependencies) %>%
             group_by(column) %>%
-            summarise(sum_dependency = sum(sum_dependency))
+            summarise(sum_dependency = sum(sum_dependency),
+                      n_dependency   = sum(n_dependencies))
       }
 
 
       # Body of the search
       for (d in 1:(D-1)){
 
-#         cat("--- Appending dimension", d, "\n")
+         # Initializes candidate list
+         filtered_candidates <- candidates
 
-         # Excludes redundant candidates - soft threshold
+         # Excludes redundant the redundant ones - soft threshold
          if (!is.null(soft_dep_threshold)){
 
-            prev_dependency <- all_dep %>% inner_join(view, by='column')
-            expired_dependency <- sum(prev_dependency$sum_dependency, na.rm=T)
+            prev_dependency <- all_dep %>%
+                              inner_join(view, by='column') %>%
+                              summarise(sum_dependency = sum(sum_dependency),
+                                        n_dependency   = sum(n_dependency))
 
-            cat("Expired:", expired_dependency, " out of ", max_sum_dependency, "\n")
+            current_sum <- prev_dependency$sum_dependency[1]
+            current_n   <- prev_dependency$n_dependency[1]
 
             to_exclude <- all_dep %>%
-               filter(sum_dependency > max_sum_dependency - expired_dependency)
+                           mutate(new_avg_dep = (sum_dependency + current_sum)/
+                                     (n_dependency + current_n)) %>%
+               filter(new_avg_dep > soft_dep_threshold)
 
-            candidates <- candidates %>%
+            filtered_candidates <- candidates %>%
                            anti_join(to_exclude, by = c('column1'='column')) %>%
                            anti_join(to_exclude, by = c('column2'='column'))
 
@@ -1053,7 +1062,7 @@ search_views <- function(K, D, zig_scores,
          # Initializes the view
          if (nrow(view) == 0){
 
-            selection <- candidates %>%
+            selection <- filtered_candidates %>%
                         mutate(zig = bi_zig + zig1 + zig2 ) %>%
                         filter(zig == max(zig, na.rm = T)) %>%
                         select(column1, column2, zig)
@@ -1067,14 +1076,14 @@ search_views <- function(K, D, zig_scores,
 
 
          # Finds the strongest candidate
-         left_edges <- candidates %>%
+         left_edges <- filtered_candidates %>%
                            semi_join(view, by = c('column1' = 'column')) %>%
                            anti_join(view, by = c('column2' = 'column')) %>%
                            group_by(column = column2) %>%
                            summarize(delta_bi_zig  = sum(bi_zig),
                                      delta_uni_zig = first(zig2))
 
-         right_edges <- candidates %>%
+         right_edges <- filtered_candidates %>%
                            semi_join(view, by = c('column2' = 'column')) %>%
                            anti_join(view, by = c('column1' = 'column')) %>%
                            group_by(column = column1) %>%
@@ -1134,8 +1143,8 @@ offline_bi_stats <- compute_bi_stats(data, offline_uni_stats)
 zig_components <- zig_score(selection, data, offline_uni_stats,
                             offline_bi_stats)
 zig_scores <- zig_aggregate(zig_components, zig_coefficients)
-views <- search_views(15, 2, zig_scores, offline_bi_stats,
-                      soft_dep_threshold = 0.3)
+views <- search_views(15, 5, zig_scores, offline_bi_stats,
+                      soft_dep_threshold = 0.25)
 
 CLOCK2 <- proc.time()['elapsed']
 print(CLOCK2 - CLOCK1)
