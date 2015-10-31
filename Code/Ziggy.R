@@ -6,17 +6,15 @@ library(ggplot2)
 
 MIN_SPARSITY <- 0.25
 
-data <- read.arff("~/Data/Files/crime/communities.arff")
-data_check <- data
-#data <- rbind(data, data, data, data, data)
+zig_coefficients <- c(
+   'm_mean_diff' = 1,
+   'm_variance_ratio' = .5,
+   'm_CramersV' = 1.5,
+   'm_corr_diff' = 1,
+   'm_CramersV_diff' = 1.5
+)
 
-for (j in 20:22)
-    data[[j]] <- as.character(cut(data[[j]], 3))
-selection <- data$ViolentCrimesPerPop > 0.7
 
-classes <- sapply(data, function(col) class(col))
-#data <- data[, !classes %in% c('factor','character')]
-#data <- data[, !classes %in% c('numeric')]
 
 check_group <- function(col_set, dataset = data){
 
@@ -86,16 +84,17 @@ check_group <- function(col_set, dataset = data){
 #############################
 # Reading and preprocessing #
 #############################
-preprocess <- function(data, nbins=4){
+preprocess <- function(data,  nbins=4){
     cat("Preprocessing in progress...")
 
 
-   sparse <- sapply(data, function(col)
-      sum(is.na(col)) > MIN_SPARSITY * length(col)
+   sparse_or_dense <- sapply(data, function(col)
+      sum(is.na(col)) > MIN_SPARSITY * length(col) |
+         length(unique(col)) > 1024
    )
-   if (any(sparse)){
-      cat("Removing", sum(sparse), "sparse columns\n")
-      data <- data[!sparse]
+   if (any(sparse_or_dense)){
+      cat("Removing", sum(sparse_or_dense), "untractable columns\n")
+      data <- data[!sparse_or_dense]
    }
 
     types <- sapply(data, class)
@@ -472,8 +471,10 @@ compute_bi_stats_cat <- function(data){
    stats_cat_bi <- stats_cat_bi %>% filter(!(grepl('!!NUM$', column1) &
                                              grepl('!!NUM$', column2)))
 
-   tables <- apply(stats_cat_bi, 1, function(cols){
-      table(data[,c(cols[1], cols[2])])
+
+   tables <- lapply(1:nrow(stats_cat_bi), function(r){
+      cols <- as.character(stats_cat_bi[r,])
+      table(data[,cols])
    })
    stats_cat_bi[['cross_tabs']] <- tables
 
@@ -878,11 +879,11 @@ zig_aggregate <- function(zig_components, zig_coef){
 
       # Bivariate, categorical zig components
       is <- names(zig_coef) %in% names(zig_components$zig_cat_bi)
-      uni_cat_cols <- zig_coef[is]
+      coef <- zig_coef[is]
 
-      zig_mat <- zig_components$zig_cat_bi[,names(uni_cat_cols), drop = F]
+      zig_mat <- zig_components$zig_cat_bi[,names(coef), drop = F]
       zig_mat <- abs(scale(zig_mat))
-      zig <- zig_mat %*% zig_coef[uni_cat_cols]
+      zig <- zig_mat %*% coef
       zig_components$zig_cat_bi <- mutate(zig_components$zig_cat_bi,
                                           zig = as.numeric(zig))
 
@@ -1093,7 +1094,7 @@ search_views <- function(K, D, zig_scores,
                                      delta_uni_zig = first(zig1))
 
          if (nrow(left_edges) < 1 & nrow(right_edges) < 1){
-            cat("Breaking search early, for k=", k, "\n")
+            #cat("Breaking search early, for k=", k, "\n")
             break
          }
 
@@ -1119,34 +1120,94 @@ search_views <- function(K, D, zig_scores,
 
    }
 
-   cat("Issued view:\n")
-   print(views)
-   cat("\n")
+   return(list(
+      views  = views,
+      scores = zigs
+   ))
+
 
 }
 
-############
-# WORKFLOW #
-############
+#################
+# FULL FUNCTION #
+#################
+ziggy_comment <- function(data, selection, K, D,
+                          soft_dep_threshold=NULL, hard_dep_threshold=NULL,
+                          logfun = NULL, outfun = NULL){
 
- zig_coefficients <- c(
-    'm_mean_diff' = 0.7,
-    'm_variance_ratio' = 0.3,
-    'm_CramersV' = 1,
-    'm_corr_diff' = 1,
-    'm_CramersV_diff' = 1
-)
 
-data  <- preprocess(data)
-CLOCK1 <- proc.time()['elapsed']
+   cat("Running the ZIGGY!\n")
+   TIME0 <- proc.time()["elapsed"]
 
-offline_uni_stats   <- compute_uni_stats(data)
-offline_bi_stats <- compute_bi_stats(data, offline_uni_stats)
-zig_components <- zig_score(selection, data, offline_uni_stats,
-                            offline_bi_stats)
-zig_scores <- zig_aggregate(zig_components, zig_coefficients)
-views <- search_views(15, 1, zig_scores, offline_bi_stats,
-                      hard_dep_threshold = 0.25)
 
-CLOCK2 <- proc.time()['elapsed']
-print(CLOCK2 - CLOCK1)
+   # Prepares "offline" statistics
+   offline_uni_stats <- compute_uni_stats(data)
+   offline_bi_stats <- compute_bi_stats(data, offline_uni_stats)
+   TIME1 <- proc.time()["elapsed"]
+
+   # Computes Zig-dissimilarities
+   zig_components <- zig_score(selection, data, offline_uni_stats,
+                               offline_bi_stats)
+   zig_scores <- zig_aggregate(zig_components, zig_coefficients)
+   TIME2 <- proc.time()["elapsed"]
+
+   # Detects views
+   viewset <- search_views(K, D, zig_scores,
+                           offline_bi_stats,
+                           soft_dep_threshold=soft_dep_threshold,
+                           hard_dep_threshold=hard_dep_threshold)
+   TIME3 <- proc.time()["elapsed"]
+
+   # Wrapping up
+   views <- lapply(1:length(viewset$views), function(i){
+      list(
+         columns  = viewset$views[[i]]$column,
+         strength = viewset$scores[[i]]
+      )
+   })
+
+   # Reporting
+   if (!is.null(logfun)){
+      logfun("Ziggy", "Time-Offline",    TIME1 - TIME0)
+      logfun("Ziggy", "Time-Zigscores",  TIME2 - TIME1)
+      logfun("Ziggy", "Time-ViewSearch", TIME3 - TIME2)
+      logfun("Ziggy", "Time",            TIME3 - TIME0)
+   }
+   if (!is.null(outfun))
+      write_results("Ziggy", views, outfun)
+
+   cat("Done!\n")
+   views
+
+
+}
+
+# ############
+# # WORKFLOW #
+# ############
+# data <- read.arff("~/Data/Files/crime/communities.arff")
+# data_check <- data
+#
+# for (j in 20:25)
+#    data[[j]] <- as.character(cut(data[[j]], 3))
+# selection <- data$ViolentCrimesPerPop > 0.7
+#
+# classes <- sapply(data, function(col) class(col))
+# #data <- data[, !classes %in% c('factor','character')]
+# #data <- data[, !classes %in% c('numeric')]
+#
+# data  <- preprocess(data)
+# CLOCK1 <- proc.time()['elapsed']
+#
+# offline_uni_stats   <- compute_uni_stats(data)
+# offline_bi_stats <- compute_bi_stats(data, offline_uni_stats)
+# zig_components <- zig_score(selection, data, offline_uni_stats,
+#                             offline_bi_stats)
+# zig_scores <- zig_aggregate(zig_components, zig_coefficients)
+# views <- search_views(15, 5, zig_scores, offline_bi_stats,
+#                       hard_dep_threshold = 0.8)
+#
+# print(views)
+#
+# CLOCK2 <- proc.time()['elapsed']
+# print(CLOCK2 - CLOCK1)
