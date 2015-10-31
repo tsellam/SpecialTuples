@@ -3,7 +3,7 @@
 if [ "$1" = "download" ]
 then
      echo DOWNLOADING FILES
-    cd ../data/experiments
+    cd ../Data
     ./get_data.sh
 
     mkdir KEEP THROW
@@ -24,7 +24,7 @@ then
     esac
     mv *.arff THROW
     mv KEEP/* .
-    cd ../../experiments
+    cd ../Experiments
 fi
 
 R -f TestRealData.R
