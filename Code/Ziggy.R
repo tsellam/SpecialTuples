@@ -238,7 +238,7 @@ mean_test <- function(mean1, mean2, var1, var2, n1, n2){
 }
 
 variance_magnitude <- function(var1, var2)
-   sqrt(var2/var1) - 1
+   sqrt(var1/var2) - 1
 
 variance_test <- function(var1, var2, n1, n2){
    # Making sure than var1 <= var2
@@ -957,7 +957,6 @@ search_views <- function(K, D, zig_scores,
                   rename(zig2 = zig)
 
 
-
    # Here comes the MEAT!
    zigs  <- list()
    views <- list(character(0))
@@ -1144,6 +1143,7 @@ ziggy_comment <- function(data, selection, K, D,
    offline_uni_stats <- compute_uni_stats(data)
    offline_bi_stats <- compute_bi_stats(data, offline_uni_stats)
    TIME1 <- proc.time()["elapsed"]
+
 
    # Computes Zig-dissimilarities
    zig_components <- zig_score(selection, data, offline_uni_stats,

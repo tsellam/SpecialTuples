@@ -1,4 +1,4 @@
-# rocks 017 018  027 028
+# rocks 015 017 019 020
 
 ################
 # SETUP SCRIPT #
@@ -24,6 +24,7 @@ echo 'install.packages("foreign",lib="~/R/library", repos="'http://cran.us.r-pro
 echo 'install.packages("igraph",lib="~/R/library", repos="'http://cran.us.r-project.org'")' | R --no-save
 echo 'install.packages("R.utils",lib="~/R/library", repos="'http://cran.us.r-project.org'")' | R --no-save
 echo 'install.packages("class",lib="~/R/library", repos="'http://cran.us.r-project.org'")' | R --no-save
+echo 'install.packages("ggplot2",lib="~/R/library", repos="'http://cran.us.r-project.org'")' | R --no-save
 
 #################
 # CHECKOUT CODE #
@@ -31,37 +32,38 @@ echo 'install.packages("class",lib="~/R/library", repos="'http://cran.us.r-proje
 rm -rf  /scratch/sellam
 mkdir /scratch/sellam
 cd /scratch/sellam
-git clone https://tsellam@bitbucket.org/tsellam/turbogroups.git
+git clone https://tsellam@bitbucket.org/tsellam/mme.git
 
-cd turbogroups/code/Rlib
+cd mme/Experiments/Baselines/Rlib
 R CMD SHLIB info_theory.c
-cd ../../experiments
+cd ../.. 
 
 ########################
 # RUN WITH DOWNLOADING #
 ########################
-cd /scratch/sellam/turbogroups/experiments
- ./wrap_view_experiments.sh download
+cd /scratch/sellam/mme/experiments
+nohup  ./wrap_experiments.sh download &
+tail -f nohup.out
 
 
 
 ###################
 # RUN EXPERIMENTS #
 ###################
-# rocks 017 018  027 028
+# rocks  015 017 019 020
 
 ssh cwi
 ssh rocks028
 killall R
 
-cd /scratch/sellam/turbogroups
+cd /scratch/sellam/mme
 git checkout -- .
 git pull -f
 
 cd code/Rlib
 R CMD SHLIB info_theory.c
 
-cd /scratch/sellam/turbogroups/experiments
+cd /scratch/sellam/MME/experiments
 rm nohup.out
 nohup ./wrap_view_experiments.sh &
 tail -f nohup.out
@@ -70,7 +72,7 @@ tail -f nohup.out
 ################
 # SEND RESULTS #
 ################
-cd /scratch/sellam/turbogroups/experiments
+cd /scratch/sellam/MME/experiments
 tarname=FindView-`hostname -s`-` date +'%B%d'`.tar.gz
 tar -czvf $tarname nohup.out *.out *.log
 scp $tarname sellam@warsaw.ins.cwi.nl:~
@@ -82,11 +84,11 @@ killall -usellam
 
 ssh rocks028
 killall R
-cd /scratch/sellam/turbogroups
+cd /scratch/sellam/MME
 git checkout -- .
 git pull -f
 
-cd /scratch/sellam/turbogroups/experiments
+cd /scratch/sellam/MME/experiments
 rm nohup.out
 nohup ./wrap_view_experiments.sh &
 tail -f nohup.out
@@ -101,7 +103,7 @@ ssh cwi
 ssh rocks028
 killall R
 
-cd /scratch/sellam/turbogroups
+cd /scratch/sellam/MME
 git checkout -- .
 git pull -f
 
