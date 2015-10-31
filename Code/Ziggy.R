@@ -938,17 +938,6 @@ search_views <- function(K, D, zig_scores,
    dependencies <- rbind(num_dependencies, cat_dependencies, self_depencies)
 
 
-
-   # Trivial case !! to update
-   if (D == 1){
-      view_cols <- uni_zigs %>%
-                     arrange(desc(zig)) %>%
-                     slice(1:K)
-   }
-
-
-
-
    if (fill_NAs){
       # Fills missing values
       all_combis <- combn(sort(uni_zigs$column), 2)
@@ -973,8 +962,6 @@ search_views <- function(K, D, zig_scores,
    views <- list(character(0))
 
    for (k in 1:K){
-
- #     cat("- Doing view", k, "\n")
 
       zig  <- 0
       view    <- data_frame('column' =  character())
@@ -1004,6 +991,22 @@ search_views <- function(K, D, zig_scores,
             cat("Not enough columns to explore, interrupting for k =", k, "\n")
             break
          }
+      }
+
+      # Trivial case !! to update
+      if (D == 1){
+
+         view_cols <- rbind_list(
+                        select(candidates, column = column1),
+                        select(candidates, column = column2)) %>%
+                     inner_join(uni_zigs, by = c('column')) %>%
+                     arrange(desc(zig)) %>%
+                     slice(1)
+
+         views[[k]] <- select(view_cols, column)
+         zigs[[k]]  <- sum(view_cols$zig)
+
+         next
       }
 
       # Computes redundancy with old columns - in preparation for soft threshold
@@ -1037,7 +1040,7 @@ search_views <- function(K, D, zig_scores,
          # Initializes candidate list
          filtered_candidates <- candidates
 
-         # Excludes redundant the redundant ones - soft threshold
+         # Excludes the redundant ones - soft threshold
          if (!is.null(soft_dep_threshold)){
 
             prev_dependency <- all_dep %>%
@@ -1072,7 +1075,6 @@ search_views <- function(K, D, zig_scores,
             zig  <- as.numeric(selection[1,'zig'])
             next
          }
-
 
 
          # Finds the strongest candidate
@@ -1115,11 +1117,11 @@ search_views <- function(K, D, zig_scores,
    zigs[[k]]  <- zig
    views[[k]] <- view
 
-   cat("Issued view:\n")
-   print(view)
-   cat("\n")
-
    }
+
+   cat("Issued view:\n")
+   print(views)
+   cat("\n")
 
 }
 
@@ -1143,8 +1145,8 @@ offline_bi_stats <- compute_bi_stats(data, offline_uni_stats)
 zig_components <- zig_score(selection, data, offline_uni_stats,
                             offline_bi_stats)
 zig_scores <- zig_aggregate(zig_components, zig_coefficients)
-views <- search_views(15, 5, zig_scores, offline_bi_stats,
-                      soft_dep_threshold = 0.25)
+views <- search_views(15, 1, zig_scores, offline_bi_stats,
+                      hard_dep_threshold = 0.25)
 
 CLOCK2 <- proc.time()['elapsed']
 print(CLOCK2 - CLOCK1)
