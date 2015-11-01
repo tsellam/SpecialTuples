@@ -30,14 +30,15 @@ out_headers <- c("experiment", "file", "K", "size_view",
 cat(paste0(out_headers, collapse="\t"), file = file_out)
 
 if (test_mode){
+   file_list <- "adult.arff"
    #file_list <- "magic.arff"
    #file_list <- "adult.arff"
-   file_list <- file_list[1:min(2, length(file_list))]
+   #file_list <- file_list[1:min(2, length(file_list))]
 }
 
 wrapper <- function(..., score_function, algo){
    tryCatch({
-      out <- evalWithTimeout(... , timeout=3600)
+      out <- evalWithTimeout(... , timeout=600)
       score_function(out, algo)
    },
    error = function(e){

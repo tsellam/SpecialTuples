@@ -98,7 +98,7 @@ cat(paste0(out_headers, collapse="\t"), file = file_out)
 
 wrapper <- function(..., score_function, algo){
    tryCatch({
-      out <- evalWithTimeout(... , timeout=3600)
+      out <- evalWithTimeout(... , timeout=600)
       score_function(out, algo)
    },
    error = function(e){

@@ -54,7 +54,7 @@ tail -f nohup.out
 # rocks  015 017 019 020
 
 ssh cwi
-ssh rocks028
+ssh rocks015
 
 killall R
 cd /scratch/sellam/mme
@@ -66,11 +66,10 @@ R CMD SHLIB info_theory.c
 
 cd /scratch/sellam/mme/Experiments
 rm nohup.out
-R -f TestSyntheticData.R test
-
 nohup ./wrap_experiments.sh &
 tail -f nohup.out
 
+#R -f TestSyntheticData.R test
 
 ################
 # SEND RESULTS #
@@ -85,7 +84,7 @@ scp $tarname sellam@warsaw.ins.cwi.nl:~
 ########################
 killall -usellam
 
-ssh rocks028
+ssh rocks015
 killall R
 cd /scratch/sellam/MME
 git checkout -- .
@@ -112,5 +111,19 @@ git pull -f
 
 cd /scratch/sellam/mme/Data
 ./get_data.sh
+
+
+
+
+# Runs without checking out # 
+# rocks  015 017 019 020
+
+ssh cwi
+ssh rocks015
+killall R
+cd /scratch/sellam/mme/Experiments
+rm nohup.out
+nohup ./wrap_experiments.sh download &
+tail -f nohup.out
 
 
