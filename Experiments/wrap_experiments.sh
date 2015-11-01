@@ -19,7 +19,7 @@ then
             mv insurance.arff bank.arff insurance.arff KEEP
         ;;
         rocks020)
-           mv breast.arff letrec.arff cover_type.arff  KEEP
+           mv breast.arff letrec.arff KEEP
         ;;
     esac
     mv *.arff THROW
@@ -28,6 +28,7 @@ then
 fi
 
 R -f TestRealData.R
+R -f TestSyntheticData.R
 
 tarname=FindView-`hostname -s`-` date +'%B%d'`.tar.gz
 tar -czvf $tarname nohup.out *.csv *.out *.log

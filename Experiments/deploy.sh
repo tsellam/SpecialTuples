@@ -25,6 +25,7 @@ echo 'install.packages("igraph",lib="~/R/library", repos="'http://cran.us.r-proj
 echo 'install.packages("R.utils",lib="~/R/library", repos="'http://cran.us.r-project.org'")' | R --no-save
 echo 'install.packages("class",lib="~/R/library", repos="'http://cran.us.r-project.org'")' | R --no-save
 echo 'install.packages("ggplot2",lib="~/R/library", repos="'http://cran.us.r-project.org'")' | R --no-save
+echo 'install.packages("clusterGeneration",lib="~/R/library", repos="'http://cran.us.r-project.org'")' | R --no-save
 
 #################
 # CHECKOUT CODE #
@@ -60,12 +61,13 @@ cd /scratch/sellam/mme
 git checkout -- .
 git pull -f
 
-
 cd /scratch/sellam/mme/Experiments/Baselines/Rlib
 R CMD SHLIB info_theory.c
 
 cd /scratch/sellam/mme/Experiments
 rm nohup.out
+R -f TestSyntheticData.R test
+
 nohup ./wrap_experiments.sh &
 tail -f nohup.out
 
@@ -108,7 +110,7 @@ cd /scratch/sellam/MME
 git checkout -- .
 git pull -f
 
-cd data/experiments
+cd /scratch/sellam/mme/Data
 ./get_data.sh
 
 

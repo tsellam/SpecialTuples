@@ -279,6 +279,11 @@ kNN_strength <- function(columns, target, data,
     set <- data[,c(columns, target)]
     set <- na.omit(set)
 
+    # If necessary, truncates
+    if (nrow(data) > 10000){
+       data <- data[1:10000,]
+    }
+
     bin_width <- floor(nrow(set) / folds)
     folds <- lapply(1:folds, function(i){
         c((i - 1) * bin_width, i * bin_width - 1)

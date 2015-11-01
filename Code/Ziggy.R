@@ -779,7 +779,7 @@ zig_score <- function(selection, data, offline_uni_stats, offline_bi_stats){
 
 
    # Materializes selection and compute statistics
-   cat("\nMaterializes selection...\n")
+   cat("Materializes selection...\n")
    sel_data  <- data[selection,]
    t_sparse_columns <- sapply(sel_data, function(col)
       sum(is.na(col)) > MIN_SPARSITY
