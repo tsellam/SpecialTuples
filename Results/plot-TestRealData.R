@@ -3,7 +3,7 @@ source("graph-utils.R")
 library(dplyr)
 library(tidyr)
 
-FOLDER <- "."
+FOLDER <- "01-11"
 
 ###############
 # PREPARATION #
@@ -32,6 +32,21 @@ log_file <- rbind_all(file_contents)
 ##########################
 # Filters and Prettifies #
 ##########################
+
+out_file <- out_file %>%
+               mutate(algo = ifelse(algo == "Ziggy",
+                                paste0(algo, "_soft", soft_thres,
+                                             "_hard", hard_thres),
+                                algo))
+
+
+log_file <- log_file %>%
+   mutate(algo = ifelse(algo == "Ziggy",
+                        paste0(algo, "_soft", soft_thres,
+                               "_hard", hard_thres),
+                        algo)) %>%
+   filter(algo != '4S_official')
+
 # black_list <-  c("internet_usage.arff", "insurance.arff")
  out_file <- out_file %>%
                mutate(file = sub(".arff", "", file))
@@ -90,7 +105,7 @@ log_file <- rbind_all(file_contents)
 #####################
 to_plot <- out_file %>%
             filter(experiment == "VaryAlgos") %>%
-            filter(grepl("- F1", key) | grepl("Diversity", key)) %>%
+            filter(grepl("- F1", key)) %>%
             spread(key, value, convert = TRUE) %>%
             rename(F1 = `kNN - F1`)
 
@@ -98,8 +113,7 @@ to_plot <- to_plot %>%
            group_by(file, algo) %>%
            summarize(med_F1 = median(F1, na.rm = T),
                      min_F1 = min(F1, na.rm = T),
-                     max_F1 = max(F1, na.rm = T),
-                     Diversity = mean(Diversity)) %>%
+                     max_F1 = max(F1, na.rm = T)) %>%
            ungroup
 
 all_combis <-  unique(merge(to_plot$file, to_plot$algo))
@@ -123,6 +137,36 @@ print(p1)
 #ggsave("../documents/plots/tmp_view-scores.pdf", p1,
 #       width = 16, height = 4, units = "cm")
 
+
+####################
+# Plots redundancy #
+####################
+to_plot <- out_file %>%
+   filter(experiment == "VaryAlgos") %>%
+   filter(grepl("Diversity", key)) %>%
+   spread(key, value, convert = TRUE)
+
+to_plot <- to_plot %>%
+   group_by(file, algo) %>%
+   summarize(Diversity = mean(Diversity)) %>%
+   ungroup
+
+all_combis <-  unique(merge(to_plot$file, to_plot$algo))
+colnames(all_combis) <- c("file", "algo")
+to_plot <- left_join(all_combis, to_plot, by =  c("algo", "file"))
+
+p2 <- ggplot(to_plot, aes(x = file, y = Diversity,
+                          fill = algo, color=algo)) +
+   geom_bar(stat = "identity", position = "dodge", width=.75) +
+   scale_x_discrete(name = "Dataset") +
+   scale_y_continuous(name = "Diversity - F1")
+
+
+p2 <- prettify(p2) +
+   theme(axis.text.x = element_text(angle = 15, hjust = 1))
+
+print(p2)
+
 ####################
 # Plots time spent #
 ####################
@@ -138,19 +182,19 @@ to_plot <- left_join(all_combis, to_plot, by =  c("algo", "file")) %>%
 
 to_plot[is.na(to_plot)] <- 3600
 
-p2 <- ggplot(to_plot, aes(x = file, y = Time, fill = algo, color=algo, label = xceeds)) +
+p3 <- ggplot(to_plot, aes(x = file, y = Time, fill = algo, color=algo, label = xceeds)) +
     geom_bar(stat = "identity", position = "dodge", width=.75) +
     geom_text(aes(y=55), color="black",
               position = position_dodge(width=.75), size=2) +
     scale_x_discrete(name="Dataset") +
     scale_y_continuous(name="Execution Time (s)") +
-    coord_cartesian(ylim = c(0,60))
+    coord_cartesian(ylim = c(0,30))
 
-p2 <- prettify(p2) +
+p3 <- prettify(p3) +
     theme(axis.text.x = element_text(angle = 15, hjust = 1))
 
 
-print(p2)
+print(p3)
 
 #ggsave("../documents/plots/tmp_view-times.pdf", p2,
 #       width = 16, height = 4, units = "cm")
@@ -175,98 +219,98 @@ print(p2)
 #
 # print(xtable(to_table), sanitize.text.function = identity)
 
-
-
-
-###################################
-# FILTER FOR CLOSE UP EXPERIMENTS #
-###################################
-zoom_files <- c("MAGICTelescope", "BankMarketing", "LetterRecog", "USCensus")
-
-
-###############################
-# Plots vary beam experiments #
-###############################
-# Prepares the out file
-to_plot <- out_file %>%
-    filter(experiment == "VaryBeam" & algo == "Claude") %>%
-    filter(grepl("- F1", key) | grepl("Strength", key)) %>%
-    filter(file %in% zoom_files) %>%
-    spread(key, value, convert = TRUE) %>%
-    mutate(F1 = pmax(`kNN - F1`, `NaiveBayes - F1`, na.rm = TRUE)) %>%
-    select(file, beam_size, view, F1, Strength)
-
-to_plot <- to_plot %>%
-            inner_join(entropies) %>%
-            mutate(Strength = Strength / entropy) %>%
-            select(-entropy)
-
-to_plot <- to_plot %>%
-            group_by(file, beam_size) %>%
-            summarise(med_strength = median(Strength),
-                      min_strength = min(Strength),
-                      max_strength = max(Strength))
-
-# Prepares the log file
-time_to_plot <- log_file %>%
-    filter(experiment == "VaryBeam" & algo == "Claude" & key == "Time") %>%
-    select(file, beam_size, Time=value)
-
-# Joins!p
-to_plot <- inner_join(to_plot, time_to_plot, by= c("file"="file", "beam_size" = "beam_size"))
-
-p3 <- ggplot(to_plot, aes(x = Time, y = med_strength, ymin=min_strength, ymax=max_strength)) +
-    scale_y_continuous(limits=c(0,1)) +
-    expand_limits(x = 0, y = 0) +
-    scale_x_continuous(name = "Execution Time (s)") +
-    scale_y_continuous(name = "View Strength (Normalized)") +
-    facet_wrap(~ file, scales="free") +
-    geom_pointrange(position = position_dodge(width = 0.5), size = 0.4) +
-    geom_ribbon(alpha = 0.3)
-
-p3 <- prettify(p3)
-print(p3)
-ggsave("../documents/plots/tmp_view-vary-beam.pdf", p3,
-       width = 9, height = 6, units = "cm")
-
-##################################
-# Prepares diversify experiments #
-##################################
-# Prepares the out file
-to_plot <- out_file %>%
-    filter(experiment == "VaryDeduplication" & algo == "Claude") %>%
-    filter(grepl("- F1", key) | grepl("Strength", key) | grepl("Diversity", key)| grepl("Dissimilarity", key)) %>%
-    filter(file %in% zoom_files) %>%
-    spread(key, value, convert = TRUE) %>%
-    mutate(F1 = pmax(`kNN - F1`, `NaiveBayes - F1`, na.rm = TRUE)) %>%
-    select(file, dedup, view, F1, Strength, Diversity, Dissimilarity)
-
-to_plot <- to_plot %>%
-    inner_join(entropies) %>%
-    mutate(Strength = Strength / entropy) %>%
-    select(-entropy)
-
-to_plot <- to_plot %>%
-    group_by(file, dedup) %>%
-    summarise(med_strength = median(Strength, na.rm = TRUE),
-              min_strength = min(Strength, na.rm = TRUE),
-              max_strength = max(Strength, na.rm = TRUE),
-              Diversity = max(Diversity, na.rm = TRUE),
-              Dissimilarity = max(Dissimilarity, na.rm = TRUE),
-              F1 = median(F1, na.rm = TRUE))
-
-p4 <- ggplot(to_plot, aes(x=100-dedup, y=Dissimilarity)) +
-        scale_x_continuous(name="Deduplication Level (%)") +
-        scale_y_continuous(name="Average Pairwise Dissimilarity", breaks= pretty_breaks()) +
-        geom_point(size = 0.8) +
-        geom_line() +
-        facet_wrap(~ file, ncol = 2, scales="free") + expand_limits(y=0)
-
-
-p4 <- prettify(p4)
-print(p4)
-
-ggsave("../documents/plots/tmp_view-vary-diversification.pdf", p4,
-       width = 9, height = 6, units = "cm")
-
-#system("cd ../documents ; ../documents/renderPDF.sh")
+#
+#
+#
+# ###################################
+# # FILTER FOR CLOSE UP EXPERIMENTS #
+# ###################################
+# zoom_files <- c("MAGICTelescope", "BankMarketing", "LetterRecog", "USCensus")
+#
+#
+# ###############################
+# # Plots vary beam experiments #
+# ###############################
+# # Prepares the out file
+# to_plot <- out_file %>%
+#     filter(experiment == "VaryBeam" & algo == "Claude") %>%
+#     filter(grepl("- F1", key) | grepl("Strength", key)) %>%
+#     filter(file %in% zoom_files) %>%
+#     spread(key, value, convert = TRUE) %>%
+#     mutate(F1 = pmax(`kNN - F1`, `NaiveBayes - F1`, na.rm = TRUE)) %>%
+#     select(file, beam_size, view, F1, Strength)
+#
+# to_plot <- to_plot %>%
+#             inner_join(entropies) %>%
+#             mutate(Strength = Strength / entropy) %>%
+#             select(-entropy)
+#
+# to_plot <- to_plot %>%
+#             group_by(file, beam_size) %>%
+#             summarise(med_strength = median(Strength),
+#                       min_strength = min(Strength),
+#                       max_strength = max(Strength))
+#
+# # Prepares the log file
+# time_to_plot <- log_file %>%
+#     filter(experiment == "VaryBeam" & algo == "Claude" & key == "Time") %>%
+#     select(file, beam_size, Time=value)
+#
+# # Joins!p
+# to_plot <- inner_join(to_plot, time_to_plot, by= c("file"="file", "beam_size" = "beam_size"))
+#
+# p3 <- ggplot(to_plot, aes(x = Time, y = med_strength, ymin=min_strength, ymax=max_strength)) +
+#     scale_y_continuous(limits=c(0,1)) +
+#     expand_limits(x = 0, y = 0) +
+#     scale_x_continuous(name = "Execution Time (s)") +
+#     scale_y_continuous(name = "View Strength (Normalized)") +
+#     facet_wrap(~ file, scales="free") +
+#     geom_pointrange(position = position_dodge(width = 0.5), size = 0.4) +
+#     geom_ribbon(alpha = 0.3)
+#
+# p3 <- prettify(p3)
+# print(p3)
+# ggsave("../documents/plots/tmp_view-vary-beam.pdf", p3,
+#        width = 9, height = 6, units = "cm")
+#
+# ##################################
+# # Prepares diversify experiments #
+# ##################################
+# # Prepares the out file
+# to_plot <- out_file %>%
+#     filter(experiment == "VaryDeduplication" & algo == "Claude") %>%
+#     filter(grepl("- F1", key) | grepl("Strength", key) | grepl("Diversity", key)| grepl("Dissimilarity", key)) %>%
+#     filter(file %in% zoom_files) %>%
+#     spread(key, value, convert = TRUE) %>%
+#     mutate(F1 = pmax(`kNN - F1`, `NaiveBayes - F1`, na.rm = TRUE)) %>%
+#     select(file, dedup, view, F1, Strength, Diversity, Dissimilarity)
+#
+# to_plot <- to_plot %>%
+#     inner_join(entropies) %>%
+#     mutate(Strength = Strength / entropy) %>%
+#     select(-entropy)
+#
+# to_plot <- to_plot %>%
+#     group_by(file, dedup) %>%
+#     summarise(med_strength = median(Strength, na.rm = TRUE),
+#               min_strength = min(Strength, na.rm = TRUE),
+#               max_strength = max(Strength, na.rm = TRUE),
+#               Diversity = max(Diversity, na.rm = TRUE),
+#               Dissimilarity = max(Dissimilarity, na.rm = TRUE),
+#               F1 = median(F1, na.rm = TRUE))
+#
+# p4 <- ggplot(to_plot, aes(x=100-dedup, y=Dissimilarity)) +
+#         scale_x_continuous(name="Deduplication Level (%)") +
+#         scale_y_continuous(name="Average Pairwise Dissimilarity", breaks= pretty_breaks()) +
+#         geom_point(size = 0.8) +
+#         geom_line() +
+#         facet_wrap(~ file, ncol = 2, scales="free") + expand_limits(y=0)
+#
+#
+# p4 <- prettify(p4)
+# print(p4)
+#
+# ggsave("../documents/plots/tmp_view-vary-diversification.pdf", p4,
+#        width = 9, height = 6, units = "cm")
+#
+# #system("cd ../documents ; ../documents/renderPDF.sh")
