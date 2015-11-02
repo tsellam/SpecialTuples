@@ -170,7 +170,7 @@ compute_uni_stats <- function(data, exclude_cols = c()){
    # Then categorical values
    cat("Computing univariate stats for categorical values\n")
    tru_cat_cols <- cat_cols[!grepl('!!NUM$', cat_cols)]
-   histograms   <- lapply(data[,tru_cat_cols], function(col) table(col))
+   histograms   <- lapply(data[,tru_cat_cols, drop=FALSE], function(col) table(col))
    #histograms   <- lapply(tru_cat_cols, function(col) bigtable(data, col))
    stats_cat_uni <- data_frame(column = tru_cat_cols,
                                   hist   = histograms)
@@ -1111,6 +1111,12 @@ search_views <- function(K, D, zig_scores,
                                   sum(delta_bi_zig) + first(delta_uni_zig)) %>%
                            filter(delta_zig == max(delta_zig, na.rm = T)) %>%
                            filter(row_number(delta_zig) == 1)
+
+         if (nrow(best_col) < 1){
+            #cat("Breaking search early, for k=", k, "\n")
+            break
+         }
+
 
          # And appends it!
          view <- best_col %>%

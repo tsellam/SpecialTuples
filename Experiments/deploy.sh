@@ -1,10 +1,10 @@
-# rocks 015 017 019 020
+# rocks 015 017 019 020 /  021 023 024 027
 
 ################
 # SETUP SCRIPT #
 ################
 ssh cwi
-ssh rocks018
+ssh rocks021
 mkdir ~/R ~/R/library ~/R/sources
 
 cd ~/R
@@ -51,7 +51,7 @@ tail -f nohup.out
 ###################
 # RUN EXPERIMENTS #
 ###################
-# rocks  015 017 019 020
+# rocks  015 017 019 020 021 023 027 028
 
 ssh cwi
 ssh rocks015
@@ -63,7 +63,6 @@ git pull -f
 
 cd /scratch/sellam/mme/Experiments/Baselines/Rlib
 R CMD SHLIB info_theory.c
-
 cd /scratch/sellam/mme/Experiments
 rm nohup.out
 nohup ./wrap_experiments.sh &
@@ -74,10 +73,13 @@ tail -f nohup.out
 ################
 # SEND RESULTS #
 ################
-cd /scratch/sellam/MME/experiments
+ssh cwi
+ssh rocks020
+cd /scratch/sellam/mme/Experiments
 tarname=FindView-`hostname -s`-` date +'%B%d'`.tar.gz
 tar -czvf $tarname nohup.out *.out *.log
 scp $tarname sellam@warsaw.ins.cwi.nl:~
+
 
 ########################
 # INTERRUPT AND RELOAD #
@@ -114,16 +116,16 @@ cd /scratch/sellam/mme/Data
 
 
 
+##################
+# TEST SPECIFICS #
+##################
+# rocks  015 017 019 020 021 023 027 028
+cd /scratch/sellam/mme
+git checkout -- .
+git pull -f
 
-# Runs without checking out # 
-# rocks  015 017 019 020
-
-ssh cwi
-ssh rocks015
-killall R
+cd /scratch/sellam/mme/Experiments/Baselines/Rlib
+R CMD SHLIB info_theory.c
 cd /scratch/sellam/mme/Experiments
-rm nohup.out
-nohup ./wrap_experiments.sh download &
-tail -f nohup.out
-
+R -f TestSyntheticData.R --args group2
 

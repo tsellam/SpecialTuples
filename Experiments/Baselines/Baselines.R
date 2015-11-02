@@ -396,7 +396,7 @@ get_kNN_score <- function(view_set, data, target, logfun, algo = NULL){
     for (i in 1:length(view_set)){
         view <- view_set[[i]]
         strength <- view$strength
-        kNN_strength <- kNN_strength(view$columns, target, data, folds=10)
+        kNN_strength <- kNN_strength(view$columns, target, data, folds=5)
         if (is.null(algo)) {
             logfun(i, strength, "kNN", kNN_strength)
         } else {

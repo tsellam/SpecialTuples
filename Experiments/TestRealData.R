@@ -30,7 +30,7 @@ out_headers <- c("experiment", "file", "K", "size_view",
 cat(paste0(out_headers, collapse="\t"), file = file_out)
 
 if (test_mode){
-   file_list <- "adult.arff"
+   file_list <- "communities.arff"
    #file_list <- "magic.arff"
    #file_list <- "adult.arff"
    #file_list <- file_list[1:min(2, length(file_list))]
@@ -38,7 +38,7 @@ if (test_mode){
 
 wrapper <- function(..., score_function, algo){
    tryCatch({
-      out <- evalWithTimeout(... , timeout=600)
+      out <- evalWithTimeout(... , timeout=1800)
       score_function(out, algo)
    },
    error = function(e){
@@ -131,16 +131,6 @@ for (arff_file in file_list){
 
 
       # My own boys
-#       soft <- 0.2
-#       hard <- NULL
-#       ziggy_view <- wrapper(
-#          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
-#                     soft_dep_threshold = soft,
-#                     hard_dep_threshold = hard,
-#                     logfun = writelog, outfun = writeout),
-#             score_function = score_function, algo = "Ziggy"
-#           )
-
       soft <- 0.3
       hard <- NULL
       ziggy_view <- wrapper(

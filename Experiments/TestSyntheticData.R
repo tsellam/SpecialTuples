@@ -1,7 +1,7 @@
 #!/usr/bin/Rscript
 args <- commandArgs(trailingOnly = TRUE)
-test_mode <- if (length(args) > 0 || exists("R_TEST")) TRUE else FALSE
-if (test_mode) print("*** Test Mode! ***")
+WORKGROUP <- if (length(args) == 0) "test" else args
+cat("******* Working group:", WORKGROUP,"********\n")
 
 library(R.utils)
 library(clusterGeneration)
@@ -24,10 +24,10 @@ generateData <- function(n_subspaces, w_subspaces, n_noise,
    cat("Generating random dataset with", n_subspaces * w_subspaces + n_noise,
        "columns, and",  n_tuples_sel + n_tuples_exc, "rows\n")
 
+   N_trick <- ceiling(n_tuples_exc / 10)
+   N_noise <- N_trick * 5
+
    subspaces <- lapply(1:n_subspaces, function(s){
-
-
-      N <- ceiling(n_tuples_exc / 5)
 
       mean1 <- runif(n = w_subspaces, min = 40, max = 60)
       cov1  <- genPositiveDefMat(w_subspaces, rangeVar = c(1,20))
@@ -35,33 +35,46 @@ generateData <- function(n_subspaces, w_subspaces, n_noise,
 
       mean2 <- runif(n = w_subspaces, min = 40, max = 60)
       cov2  <- genPositiveDefMat(w_subspaces, rangeVar = c(1,20))
-      data2 <- mvrnorm(N, mu = mean2, Sigma = cov2$Sigma)
+      data2 <- mvrnorm(N_trick, mu = mean2, Sigma = cov2$Sigma)
 
       mean3 <- runif(n = w_subspaces, min = 40, max = 60)
       cov3  <- genPositiveDefMat(w_subspaces, rangeVar = c(1,20))
-      data3 <- mvrnorm(N, mu = mean3, Sigma = cov3$Sigma)
+      data3 <- mvrnorm(N_trick, mu = mean3, Sigma = cov3$Sigma)
 
       mean4 <- runif(n = w_subspaces, min = 40, max = 60)
       cov4  <- genPositiveDefMat(w_subspaces, rangeVar = c(1,20))
-      data4 <- mvrnorm(N, mu = mean4, Sigma = cov4$Sigma)
+      data4 <- mvrnorm(N_trick, mu = mean4, Sigma = cov4$Sigma)
 
       mean5 <- runif(n = w_subspaces, min = 40, max = 60)
       cov5  <- genPositiveDefMat(w_subspaces, rangeVar = c(1,20))
-      data5 <- mvrnorm(N, mu = mean5, Sigma = cov5$Sigma)
+      data5 <- mvrnorm(N_trick, mu = mean5, Sigma = cov5$Sigma)
 
       mean6 <- runif(n = w_subspaces, min = 40, max = 60)
       cov6  <- genPositiveDefMat(w_subspaces, rangeVar = c(1,20))
-      data6 <- mvrnorm(N, mu = mean6, Sigma = cov6$Sigma)
+      data6 <- mvrnorm(N_trick, mu = mean6, Sigma = cov6$Sigma)
 
-      rbind(data1, data2, data3, data4, data5, data6)
+      noise <- runif(N_noise * w_subspaces, min = 10, max=90)
+      noise <- matrix(noise, nrow = N_noise, ncol = w_subspaces)
 
+      all_extras <- rbind(data2, data3, data4, data5, data6, noise)
+      all_extras <- all_extras[sample(1:nrow(all_extras),
+                                      nrow(all_extras),
+                                      replace=FALSE),]
+
+      rbind(data1, all_extras)
 
    })
 
    noise_cols <- lapply(1:n_noise, function(j){
+
       noise_mean <- runif(1, min = 10, max = 90)
       noise_vari <- runif(1, min = 0,  max = 30)
-      rnorm(nrow(subspaces[[1]]), noise_mean, noise_vari)
+
+      gauss <- rnorm(n_tuples_sel + N_noise, noise_mean, noise_vari)
+      noise <-  runif(N_noise, min = 10, max=90)
+
+      all_col <- c(gauss, noise)
+
    })
 
 
@@ -98,7 +111,7 @@ cat(paste0(out_headers, collapse="\t"), file = file_out)
 
 wrapper <- function(..., score_function, algo){
    tryCatch({
-      out <- evalWithTimeout(... , timeout=600)
+      out <- evalWithTimeout(... , timeout=900)
       score_function(out, algo)
    },
    error = function(e){
@@ -117,20 +130,57 @@ score_function <- function(res, algo){
 
 
 
-if (test_mode){
-   REF_n_subspaces   <- 5
+if (WORKGROUP == "test"){
+   REF_n_subspaces   <- 4
    REF_w_subspaces   <- 5
    REF_n_noise       <- 5
-   REF_n_tuples_sel  <- 50
+   REF_n_tuples_sel  <- 30
    REF_n_tuples_exc  <- 300
 } else {
-   REF_n_subspaces   <- 5
+   REF_n_subspaces   <- 4
    REF_w_subspaces   <- 5
-   REF_n_noise       <- 25
-   REF_n_tuples_sel  <- 5000
+   REF_n_noise       <- 5
+   REF_n_tuples_sel  <- 3000
    REF_n_tuples_exc  <- 30000
 }
 
+
+if (WORKGROUP == "test"){
+   grid_w_subspaces  <- c(2,3)
+   grid_n_noise      <- c(20,50)
+   grid_n_tuples_sel <- c(10, 250)
+   grid_n_tuples_exc <- c(300, 1000)
+   grid_n_subspaces  <- c(1,3)
+   grid_dedup        <- c(0.2, 0.5)
+} else if (WORKGROUP == "group1"){
+   grid_w_subspaces  <- c(4)
+   grid_n_noise      <- c(25)
+   grid_n_tuples_sel <- c(25000)
+   grid_n_tuples_exc <- c(125000)
+   grid_n_subspaces  <- c(15)
+   grid_dedup        <- 0.2
+} else if (WORKGROUP == "group2"){
+   grid_w_subspaces  <- c(8)
+   grid_n_noise      <- c(50)
+   grid_n_tuples_sel <- c(15000)
+   grid_n_tuples_exc <- c(100000)
+   grid_n_subspaces  <- c(5)
+   grid_dedup        <- 0.4
+} else if (WORKGROUP == "group3"){
+   grid_w_subspaces  <- c(12)
+   grid_n_noise      <- c(75)
+   grid_n_tuples_sel <- c(5000)
+   grid_n_tuples_exc <- c(75000)
+   grid_n_subspaces  <- c(20)
+   grid_dedup        <- 0.6
+} else if (WORKGROUP == "group4"){
+   grid_w_subspaces  <- c(16)
+   grid_n_noise      <- c(100)
+   grid_n_tuples_sel <- c(1000)
+   grid_n_tuples_exc <- c(25000)
+   grid_n_subspaces  <- c(10)
+   grid_dedup        <-  0.8
+}
 
 
 ############################################
@@ -148,15 +198,9 @@ n_tuples_exc  <- REF_n_tuples_exc
 
 
 cat('\n\n\n\n**** Experiment: Vary Subspace Size\n')
-grid <- if (test_mode){
-   c(2, 4)
-} else {
-   c(2,4,8,12,16)
-}
-for (w_subspaces in grid){
+for (w_subspaces in grid_w_subspaces){
 
-   n_noise <- n_subspaces * w_subspaces
-
+   n_noise <- w_subspaces
 
    tryCatch({
 
@@ -221,7 +265,7 @@ for (w_subspaces in grid){
       # Runs the other guys
       #  Baselines
 
-      if (!test_mode){
+      if (!WORKGROUP == "test"){
 
          fourS_views <-  wrapper(
          FourS(clean_data_kNN, target, jar_loc = jar_loc,
@@ -276,12 +320,7 @@ n_tuples_exc  <- REF_n_tuples_exc
 
 
 cat('\n\n\n\n**** Experiment: Vary Noise\n')
-grid <- if (test_mode){
-   c(100, 50)
-} else {
-   c(25, 50, 75, 100)
-}
-for (n_noise in grid){
+for (n_noise in grid_n_noise){
 
    tryCatch({
 
@@ -346,7 +385,7 @@ for (n_noise in grid){
       # Runs the other guys
       #  Baselines
 
-      if (!test_mode){
+      if (!WORKGROUP == "test"){
 
          fourS_views <-  wrapper(
             FourS(clean_data_kNN, target, jar_loc = jar_loc,
@@ -401,12 +440,7 @@ n_tuples_exc  <- REF_n_tuples_exc
 
 
 cat('\n\n\n\n**** Experiment: Vary Size target\n')
-grid <- if (test_mode){
-   c(10, 250)
-} else {
-   c(1000, 5000, 15000, 25000)
-}
-for (n_tuples_sel in grid){
+for (n_tuples_sel in grid_n_tuples_sel){
 
    tryCatch({
 
@@ -471,7 +505,7 @@ for (n_tuples_sel in grid){
       # Runs the other guys
       #  Baselines
 
-      if (!test_mode){
+      if (!WORKGROUP == "test"){
 
          fourS_views <-  wrapper(
             FourS(clean_data_kNN, target, jar_loc = jar_loc,
@@ -531,14 +565,9 @@ n_tuples_exc  <- REF_n_tuples_exc
 
 
 cat('\n\n\n\n**** Experiment: Runtime - nrows \n')
-grid <- if (test_mode){
-   c(300, 1000)
-} else {
-   c(25000, 75000, 100000, 125000, 150000)
-}
-for (n_tuples_exc in grid){
+for (n_tuples_exc in grid_n_tuples_exc){
 
-   n_tuples_sel <- ceiling(1/6 * n_tuples_exc)
+   n_tuples_sel <- ceiling(1/10 * n_tuples_exc)
 
    tryCatch({
 
@@ -603,7 +632,7 @@ for (n_tuples_exc in grid){
       # Runs the other guys
       #  Baselines
 
-      if (!test_mode){
+      if (!WORKGROUP == "test"){
 
          fourS_views <-  wrapper(
             FourS(clean_data_kNN, target, jar_loc = jar_loc,
@@ -659,12 +688,8 @@ n_tuples_exc  <- REF_n_tuples_exc
 
 
 cat('\n\n\n\n**** Experiment: Runtime - Number of Subspaces \n')
-grid <- if (test_mode){
-   c(1, 3)
-} else {
-   c(5, 10, 15, 20, 25)
-}
-for (n_subspaces in grid){
+
+for (n_subspaces in grid_n_subspaces){
 
 
    tryCatch({
@@ -730,7 +755,7 @@ for (n_subspaces in grid){
       # Runs the other guys
       #  Baselines
 
-      if (!test_mode){
+      if (!WORKGROUP == "test"){
 
          fourS_views <-  wrapper(
             FourS(clean_data_kNN, target, jar_loc = jar_loc,
@@ -786,12 +811,7 @@ n_tuples_exc  <- REF_n_tuples_exc
 
 
 cat('\n\n\n\n**** Experiment: Deduplication \n')
-grid <- if (test_mode){
-   c(0.2, 0.5)
-} else {
-   1:5*0.2
-}
-for (dedup in grid){
+for (dedup in grid_dedup){
 
 
    tryCatch({

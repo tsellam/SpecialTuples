@@ -3,29 +3,33 @@ source("graph-utils.R")
 library(dplyr)
 library(tidyr)
 
-FOLDER <- "01-11"
+FOLDER <- "02-11"
 
 ###############
 # PREPARATION #
 ###############
 # Out files
-files <- list.files(FOLDER, pattern = "results.out", recursive = TRUE)
+files <- list.files(FOLDER, pattern = "^results.out", recursive = TRUE)
 files <- paste(FOLDER, files, sep = "/")
 cat(length(files), " result files found!\n")
 file_contents <- lapply(files, function(f){
     cat("Reading", f, "\n")
-    read.delim(f, stringsAsFactors = FALSE)
+    content <- read.delim(f, stringsAsFactors = FALSE)
+    file_name <- rep(f, nrow(content))
+    cbind(file_name, content)
 })
 out_file <- rbind_all(file_contents)
 
 # Timing files
-files <- list.files(FOLDER, pattern = "results.log", recursive = TRUE)
+files <- list.files(FOLDER, pattern = "^results.log", recursive = TRUE)
 files <- paste(FOLDER, files, sep = "/")
 cat(length(files), " log files found!\n")
 file_contents <- lapply(files, function(f){
     cat("Reading", f, "\n")
-    read.delim(f, stringsAsFactors = FALSE)
-})
+    content <- read.delim(f, stringsAsFactors = FALSE)
+    file_name <- rep(f, nrow(content))
+    cbind(file_name, content)
+ })
 log_file <- rbind_all(file_contents)
 
 
@@ -38,6 +42,7 @@ out_file <- out_file %>%
                                 paste0(algo, "_soft", soft_thres,
                                              "_hard", hard_thres),
                                 algo))
+
 
 
 log_file <- log_file %>%
@@ -195,6 +200,67 @@ p3 <- prettify(p3) +
 
 
 print(p3)
+
+
+##################################
+# Plots deduplication efficiency #
+##################################
+to_plot1 <- out_file %>%
+   filter(experiment == "VaryDeduplication") %>%
+   select(file, soft_thres, hard_thres, key, value) %>%
+   filter(grepl("- F1", key)) %>%
+   mutate(value = as.numeric(value)) %>%
+   group_by(file, soft_thres, hard_thres) %>%
+   summarise(F1 = mean(value, na.rm = T))
+
+to_plot2 <- out_file %>%
+   filter(experiment == "VaryDeduplication") %>%
+   select(file, soft_thres, hard_thres, key, value) %>%
+   filter(grepl("Diversity", key)) %>%
+   mutate(Diversity = as.numeric(value)) %>%
+   select(-key, -value)
+
+
+to_plot <- to_plot1 %>%
+            inner_join(to_plot2, by = c('file', 'soft_thres', 'hard_thres')) %>%
+            gather(threshold_type, threshold_value, soft_thres, hard_thres,
+                   convert = TRUE) %>%
+            filter(threshold_value > 0)
+
+#to_plot <- filter(to_plot, file == 'adult')
+
+
+
+
+# Effect on diversity (constant or decreasing)
+p4 <- ggplot(to_plot, aes(x = threshold_value,
+                          y = Diversity,
+                          color = threshold_type)) +
+      geom_line() +
+      geom_point() +
+      facet_wrap(~file)
+
+p4 <- prettify(p4) +
+   theme(axis.text.x = element_text(angle = 15, hjust = 1))
+
+
+print(p4)
+
+
+# Effect on F1 (constant of increasing)
+p5 <- ggplot(to_plot, aes(x = threshold_value,
+                          y = F1,
+                          color = threshold_type)) +
+      geom_line() +
+      geom_point() +
+      scale_y_continuous(limits=c(0,1)) +
+      facet_wrap(~file)
+
+p5 <- prettify(p5) +
+   theme(axis.text.x = element_text(angle = 15, hjust = 1))
+
+
+print(p5)
 
 #ggsave("../documents/plots/tmp_view-times.pdf", p2,
 #       width = 16, height = 4, units = "cm")
