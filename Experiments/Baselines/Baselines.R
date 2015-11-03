@@ -79,6 +79,8 @@ FourS <- function(data, target,
         logfun("4S_official", "Time", TIME_RUN + TIME_PREPARE + TIME_FINAL)
     }
 
+    file.remove("ztmp_runtime.out", "ztmp_subspaces.out", "ztmp_data.csv",
+                "ztmp_cliques_out", "ztmp_cliques_b_out" , "ztmp_graph")
     cat("Done\n")
     views
 }

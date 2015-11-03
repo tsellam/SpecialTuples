@@ -238,7 +238,7 @@ for (w_subspaces in grid_w_subspaces){
       K <- n_subspaces
       D <- w_subspaces
 
-      soft <- 0.3
+      soft <- 0.1
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -248,7 +248,7 @@ for (w_subspaces in grid_w_subspaces){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.5
+      soft <- 0.2
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -258,7 +258,7 @@ for (w_subspaces in grid_w_subspaces){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.7
+      soft <- 0.8
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -379,7 +379,7 @@ for (n_noise in grid_n_noise){
       K <- n_subspaces
       D <- w_subspaces
 
-      soft <- 0.3
+      soft <- 0.1
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -389,7 +389,7 @@ for (n_noise in grid_n_noise){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.5
+      soft <- 0.2
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -399,7 +399,7 @@ for (n_noise in grid_n_noise){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.7
+      soft <- 0.8
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -518,7 +518,7 @@ for (n_tuples_sel in grid_n_tuples_sel){
       K <- n_subspaces
       D <- w_subspaces
 
-      soft <- 0.3
+      soft <- 0.1
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -528,7 +528,7 @@ for (n_tuples_sel in grid_n_tuples_sel){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.5
+      soft <- 0.2
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -538,7 +538,7 @@ for (n_tuples_sel in grid_n_tuples_sel){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.7
+      soft <- 0.8
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -665,7 +665,7 @@ for (n_tuples_exc in grid_n_tuples_exc){
       K <- n_subspaces
       D <- w_subspaces
 
-      soft <- 0.3
+      soft <- 0.1
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -675,7 +675,7 @@ for (n_tuples_exc in grid_n_tuples_exc){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.5
+      soft <- 0.2
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -685,7 +685,7 @@ for (n_tuples_exc in grid_n_tuples_exc){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.7
+      soft <- 0.8
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -808,7 +808,7 @@ for (n_subspaces in grid_n_subspaces){
       K <- REF_n_subspaces
       D <- REF_w_subspaces
 
-      soft <- 0.3
+      soft <- 0.1
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -818,7 +818,7 @@ for (n_subspaces in grid_n_subspaces){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.5
+      soft <- 0.2
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -828,7 +828,7 @@ for (n_subspaces in grid_n_subspaces){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.7
+      soft <- 0.8
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
