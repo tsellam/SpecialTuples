@@ -30,15 +30,12 @@ out_headers <- c("experiment", "file", "K", "size_view",
 cat(paste0(out_headers, collapse="\t"), file = file_out)
 
 if (test_mode){
-   file_list <- "communities.arff"
-   #file_list <- "magic.arff"
-   #file_list <- "adult.arff"
-   #file_list <- file_list[1:min(2, length(file_list))]
+   file_list <- "letrec.arff"
 }
 
 wrapper <- function(..., score_function, algo){
    tryCatch({
-      out <- evalWithTimeout(... , timeout=1800)
+      out <- evalWithTimeout(... , timeout=3600)
       score_function(out, algo)
    },
    error = function(e){
@@ -167,7 +164,7 @@ for (arff_file in file_list){
 
           beamed_kNN <-  wrapper(
              search_exact_kNN(clean_data_kNN, target, q = K,
-                              size_view = D, size_beam = b,
+                              size_view = D, size_beam = D+2,
                               logfun = writelog, outfun = writeout),
              score_function = score_function,
              algo = "Wrap_kNN"

@@ -137,9 +137,9 @@ if (WORKGROUP == "test"){
    REF_n_tuples_sel  <- 30
    REF_n_tuples_exc  <- 300
 } else {
-   REF_n_subspaces   <- 4
-   REF_w_subspaces   <- 5
-   REF_n_noise       <- 5
+   REF_n_subspaces   <- 5
+   REF_w_subspaces   <- 4
+   REF_n_noise       <- 4
    REF_n_tuples_sel  <- 3000
    REF_n_tuples_exc  <- 30000
 }
@@ -248,6 +248,27 @@ for (w_subspaces in grid_w_subspaces){
          score_function = score_function, algo = "Ziggy"
       )
 
+      soft <- 0.5
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
+      soft <- 0.7
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
+
       soft <- NULL
       hard <- 0.99
       ziggy_view <- wrapper(
@@ -276,7 +297,7 @@ for (w_subspaces in grid_w_subspaces){
 
       beamed_kNN <-  wrapper(
          search_exact_kNN(clean_data_kNN, target, q = K,
-                          size_view = D, size_beam = D*2,
+                          size_view = D, size_beam = D+2,
                           logfun = writelog, outfun = writeout),
          score_function = score_function,
          algo = "Wrap_kNN"
@@ -294,7 +315,7 @@ for (w_subspaces in grid_w_subspaces){
 
       approx <- wrapper(
          search_approx(clean_data_claude, target, q = K,
-                       size_view = D, size_beam = D*2, dup_factor = D*4,
+                       size_view = D, size_beam = D*1.5, dup_factor = D*4,
                        logfun = writelog, outfun = writeout),
          score_function = score_function,
          algo = "Approximative"
@@ -368,6 +389,25 @@ for (n_noise in grid_n_noise){
          score_function = score_function, algo = "Ziggy"
       )
 
+      soft <- 0.5
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
+      soft <- 0.7
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
       soft <- NULL
       hard <- 0.99
       ziggy_view <- wrapper(
@@ -396,7 +436,7 @@ for (n_noise in grid_n_noise){
 
          beamed_kNN <-  wrapper(
             search_exact_kNN(clean_data_kNN, target, q = K,
-                             size_view = D, size_beam = D*2,
+                             size_view = D, size_beam = D+2,
                              logfun = writelog, outfun = writeout),
             score_function = score_function,
             algo = "Wrap_kNN"
@@ -414,7 +454,7 @@ for (n_noise in grid_n_noise){
 
       approx <- wrapper(
          search_approx(clean_data_claude, target, q = K,
-                       size_view = D, size_beam = D*2, dup_factor = D*4,
+                       size_view = D, size_beam = D*1.5, dup_factor = D*4,
                        logfun = writelog, outfun = writeout),
          score_function = score_function,
          algo = "Approximative"
@@ -488,6 +528,26 @@ for (n_tuples_sel in grid_n_tuples_sel){
          score_function = score_function, algo = "Ziggy"
       )
 
+      soft <- 0.5
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
+      soft <- 0.7
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
       soft <- NULL
       hard <- 0.99
       ziggy_view <- wrapper(
@@ -516,7 +576,7 @@ for (n_tuples_sel in grid_n_tuples_sel){
 
          beamed_kNN <-  wrapper(
             search_exact_kNN(clean_data_kNN, target, q = K,
-                             size_view = D, size_beam = D*2,
+                             size_view = D, size_beam = D+2,
                              logfun = writelog, outfun = writeout),
             score_function = score_function,
             algo = "Wrap_kNN"
@@ -534,7 +594,7 @@ for (n_tuples_sel in grid_n_tuples_sel){
 
       approx <- wrapper(
          search_approx(clean_data_claude, target, q = K,
-                       size_view = D, size_beam = D*2, dup_factor = D*4,
+                       size_view = D, size_beam = D*1.5, dup_factor = D*4,
                        logfun = writelog, outfun = writeout),
          score_function = score_function,
          algo = "Approximative"
@@ -615,6 +675,26 @@ for (n_tuples_exc in grid_n_tuples_exc){
          score_function = score_function, algo = "Ziggy"
       )
 
+      soft <- 0.5
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
+      soft <- 0.7
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
       soft <- NULL
       hard <- 0.99
       ziggy_view <- wrapper(
@@ -643,7 +723,7 @@ for (n_tuples_exc in grid_n_tuples_exc){
 
          beamed_kNN <-  wrapper(
             search_exact_kNN(clean_data_kNN, target, q = K,
-                             size_view = D, size_beam = D*2,
+                             size_view = D, size_beam = D+2,
                              logfun = writelog, outfun = writeout),
             score_function = score_function,
             algo = "Wrap_kNN"
@@ -661,7 +741,7 @@ for (n_tuples_exc in grid_n_tuples_exc){
 
       approx <- wrapper(
          search_approx(clean_data_claude, target, q = K,
-                       size_view = D, size_beam = D*2, dup_factor = D*4,
+                       size_view = D, size_beam = D*1.5, dup_factor = D*4,
                        logfun = writelog, outfun = writeout),
          score_function = score_function,
          algo = "Approximative"
@@ -738,6 +818,26 @@ for (n_subspaces in grid_n_subspaces){
          score_function = score_function, algo = "Ziggy"
       )
 
+      soft <- 0.5
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
+      soft <- 0.7
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
       soft <- NULL
       hard <- 0.99
       ziggy_view <- wrapper(
@@ -766,7 +866,7 @@ for (n_subspaces in grid_n_subspaces){
 
          beamed_kNN <-  wrapper(
             search_exact_kNN(clean_data_kNN, target, q = K,
-                             size_view = D, size_beam = D*2,
+                             size_view = D, size_beam = D+2,
                              logfun = writelog, outfun = writeout),
             score_function = score_function,
             algo = "Wrap_kNN"
@@ -784,7 +884,7 @@ for (n_subspaces in grid_n_subspaces){
 
       approx <- wrapper(
          search_approx(clean_data_claude, target, q = K,
-                       size_view = D, size_beam = D*2, dup_factor = D*4,
+                       size_view = D, size_beam = D*1.5, dup_factor = D*4,
                        logfun = writelog, outfun = writeout),
          score_function = score_function,
          algo = "Approximative"
@@ -803,12 +903,14 @@ for (n_subspaces in grid_n_subspaces){
 ###############################
 # Third batch : Deduplication #
 ###############################
-n_subspaces   <- REF_n_subspaces
-w_subspaces   <- REF_w_subspaces
+n_subspaces   <- 10
+w_subspaces   <- 3
 n_noise       <- REF_n_noise
 n_tuples_sel  <- REF_n_tuples_sel
 n_tuples_exc  <- REF_n_tuples_exc
 
+K <- 5
+D <- 3
 
 cat('\n\n\n\n**** Experiment: Deduplication \n')
 for (dedup in grid_dedup){
@@ -845,8 +947,7 @@ for (dedup in grid_dedup){
 
 
       # Runs Ziggy
-      K <- n_subspaces
-      D <- w_subspaces
+
 
       soft <- dedup
       hard <- NULL

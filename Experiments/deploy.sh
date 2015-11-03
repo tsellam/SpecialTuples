@@ -74,11 +74,20 @@ tail -f nohup.out
 # SEND RESULTS #
 ################
 ssh cwi
-ssh rocks020
+ssh rocks021
 cd /scratch/sellam/mme/Experiments
 tarname=FindView-`hostname -s`-` date +'%B%d'`.tar.gz
 tar -czvf $tarname nohup.out *.out *.log
 scp $tarname sellam@warsaw.ins.cwi.nl:~
+
+#########################
+# CHECKS IT IS ALL FINE #
+#########################
+# rocks  015 017 019 020 021 023 027 028
+ssh cwi
+ssh rocks015
+cd /scratch/sellam/mme/Experiments
+tail -f nohup.out
 
 
 ########################
@@ -92,9 +101,9 @@ cd /scratch/sellam/MME
 git checkout -- .
 git pull -f
 
-cd /scratch/sellam/MME/experiments
+cd /scratch/sellam/mme/Experiments
 rm nohup.out
-nohup ./wrap_view_experiments.sh &
+nohup ./wrap_experiments.sh &
 tail -f nohup.out
 
 
@@ -124,8 +133,9 @@ cd /scratch/sellam/mme
 git checkout -- .
 git pull -f
 
+
 cd /scratch/sellam/mme/Experiments/Baselines/Rlib
 R CMD SHLIB info_theory.c
 cd /scratch/sellam/mme/Experiments
-R -f TestSyntheticData.R --args group2
+R -f TestSyntheticData.R --args group1
 
