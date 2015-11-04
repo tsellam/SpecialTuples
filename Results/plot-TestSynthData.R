@@ -3,7 +3,7 @@ source("graph-utils.R")
 library(dplyr)
 library(tidyr)
 
-FOLDER <- "03-11"
+FOLDER <- "04-11"
 
 ###############
 # PREPARATION #
@@ -37,7 +37,8 @@ out_file <- out_file %>%
                mutate(algo = ifelse(algo == "Ziggy",
                                 paste0(algo, "_soft", soft_thres,
                                              "_hard", hard_thres),
-                                algo))
+                                algo)) %>%
+               filter(!soft_thres %in% c(0.2, 0.8))
 
 
 log_file <- log_file %>%
@@ -270,6 +271,20 @@ to_plot <- to_plot1 %>%
    inner_join(to_plot2, by=c('algo', 'soft_thres', 'hard_thres')) %>%
    mutate(experiments = ifelse(soft_thres > 0, 'Soft thresold', 'Hard threshold'))
 
+
+p5bis <-  ggplot(to_plot, aes(x = soft_thres + hard_thres, y = F1, color = experiments, fill= experiments)) +
+   geom_point() +
+   geom_line() +
+   scale_x_continuous(name = "Soft Threshold") +
+   scale_y_continuous(name = "Accuracy - F1", limits=c(0,1))
+plot(p5bis)
+
+p5ter <-  ggplot(to_plot, aes(x = soft_thres + hard_thres, y = Diversity, color = experiments, fill= experiments)) +
+   geom_point() +
+   geom_line() +
+   scale_x_continuous(name = "Soft Threshold") +
+   scale_y_continuous(name = "Diversity")
+plot(p5ter)
 
 p5 <- ggplot(to_plot, aes(x = Diversity, y = F1, color = experiments, fill= experiments)) +
    geom_point() +

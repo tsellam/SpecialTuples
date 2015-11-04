@@ -74,7 +74,10 @@ generateData <- function(n_subspaces, w_subspaces, n_noise,
       noise <-  runif(N_noise, min = 10, max=90)
 
       all_col <- c(gauss, noise)
-
+      all_col <- all_col[sample(1:length(all_col),
+                                length(all_col),
+                                replace=FALSE)]
+      all_col <- matrix(all_col, ncol = 1)
    })
 
 
@@ -131,11 +134,11 @@ score_function <- function(res, algo){
 
 
 if (WORKGROUP == "test"){
-   REF_n_subspaces   <- 4
-   REF_w_subspaces   <- 5
-   REF_n_noise       <- 5
-   REF_n_tuples_sel  <- 30
-   REF_n_tuples_exc  <- 300
+   REF_n_subspaces   <- 5
+   REF_w_subspaces   <- 4
+   REF_n_noise       <- 4
+   REF_n_tuples_sel  <- 300
+   REF_n_tuples_exc  <- 3000
 } else {
    REF_n_subspaces   <- 5
    REF_w_subspaces   <- 4
@@ -238,6 +241,16 @@ for (w_subspaces in grid_w_subspaces){
       K <- n_subspaces
       D <- w_subspaces
 
+      soft <- 0.05
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
       soft <- 0.1
       hard <- NULL
       ziggy_view <- wrapper(
@@ -248,17 +261,7 @@ for (w_subspaces in grid_w_subspaces){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.2
-      hard <- NULL
-      ziggy_view <- wrapper(
-         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
-                       soft_dep_threshold = soft,
-                       hard_dep_threshold = hard,
-                       logfun = writelog, outfun = writeout),
-         score_function = score_function, algo = "Ziggy"
-      )
-
-      soft <- 0.8
+      soft <- 0.15
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -379,6 +382,16 @@ for (n_noise in grid_n_noise){
       K <- n_subspaces
       D <- w_subspaces
 
+      soft <- 0.05
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
       soft <- 0.1
       hard <- NULL
       ziggy_view <- wrapper(
@@ -389,17 +402,7 @@ for (n_noise in grid_n_noise){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.2
-      hard <- NULL
-      ziggy_view <- wrapper(
-         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
-                       soft_dep_threshold = soft,
-                       hard_dep_threshold = hard,
-                       logfun = writelog, outfun = writeout),
-         score_function = score_function, algo = "Ziggy"
-      )
-
-      soft <- 0.8
+      soft <- 0.15
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -518,7 +521,7 @@ for (n_tuples_sel in grid_n_tuples_sel){
       K <- n_subspaces
       D <- w_subspaces
 
-      soft <- 0.1
+      soft <- 0.05
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -528,7 +531,7 @@ for (n_tuples_sel in grid_n_tuples_sel){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.2
+      soft <- 0.10
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -538,7 +541,7 @@ for (n_tuples_sel in grid_n_tuples_sel){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.8
+      soft <- 0.15
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -665,7 +668,7 @@ for (n_tuples_exc in grid_n_tuples_exc){
       K <- n_subspaces
       D <- w_subspaces
 
-      soft <- 0.1
+      soft <- 0.05
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -675,7 +678,7 @@ for (n_tuples_exc in grid_n_tuples_exc){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.2
+      soft <- 0.10
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -685,7 +688,7 @@ for (n_tuples_exc in grid_n_tuples_exc){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.8
+      soft <- 0.15
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
@@ -808,6 +811,16 @@ for (n_subspaces in grid_n_subspaces){
       K <- REF_n_subspaces
       D <- REF_w_subspaces
 
+      soft <- 0.05
+      hard <- NULL
+      ziggy_view <- wrapper(
+         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
+                       soft_dep_threshold = soft,
+                       hard_dep_threshold = hard,
+                       logfun = writelog, outfun = writeout),
+         score_function = score_function, algo = "Ziggy"
+      )
+
       soft <- 0.1
       hard <- NULL
       ziggy_view <- wrapper(
@@ -818,17 +831,7 @@ for (n_subspaces in grid_n_subspaces){
          score_function = score_function, algo = "Ziggy"
       )
 
-      soft <- 0.2
-      hard <- NULL
-      ziggy_view <- wrapper(
-         ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
-                       soft_dep_threshold = soft,
-                       hard_dep_threshold = hard,
-                       logfun = writelog, outfun = writeout),
-         score_function = score_function, algo = "Ziggy"
-      )
-
-      soft <- 0.8
+      soft <- 0.15
       hard <- NULL
       ziggy_view <- wrapper(
          ziggy_comment(clean_data_ziggy, target_ziggy, K=K, D=D,
