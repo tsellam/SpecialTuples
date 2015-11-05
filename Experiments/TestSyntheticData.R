@@ -114,7 +114,7 @@ cat(paste0(out_headers, collapse="\t"), file = file_out)
 
 wrapper <- function(..., score_function, algo){
    tryCatch({
-      out <- evalWithTimeout(... , timeout=900)
+      out <- evalWithTimeout(... , timeout=3600)
       score_function(out, algo)
    },
    error = function(e){
@@ -137,8 +137,8 @@ if (WORKGROUP == "test"){
    REF_n_subspaces   <- 5
    REF_w_subspaces   <- 4
    REF_n_noise       <- 4
-   REF_n_tuples_sel  <- 300
-   REF_n_tuples_exc  <- 3000
+   REF_n_tuples_sel  <- 3000
+   REF_n_tuples_exc  <- 30000
 } else {
    REF_n_subspaces   <- 5
    REF_w_subspaces   <- 4
@@ -161,28 +161,28 @@ if (WORKGROUP == "test"){
    grid_n_tuples_sel <- c(25000)
    grid_n_tuples_exc <- c(125000)
    grid_n_subspaces  <- c(15)
-   grid_dedup        <- 0.2
+   grid_dedup        <- c(0.1, 0.2)
 } else if (WORKGROUP == "group2"){
    grid_w_subspaces  <- c(8)
    grid_n_noise      <- c(50)
    grid_n_tuples_sel <- c(15000)
    grid_n_tuples_exc <- c(100000)
    grid_n_subspaces  <- c(5)
-   grid_dedup        <- 0.4
+   grid_dedup        <- c(0.3, 0.4)
 } else if (WORKGROUP == "group3"){
    grid_w_subspaces  <- c(12)
    grid_n_noise      <- c(75)
    grid_n_tuples_sel <- c(5000)
    grid_n_tuples_exc <- c(75000)
    grid_n_subspaces  <- c(20)
-   grid_dedup        <- 0.6
+   grid_dedup        <- c(0.5, 0.6)
 } else if (WORKGROUP == "group4"){
    grid_w_subspaces  <- c(16)
    grid_n_noise      <- c(100)
    grid_n_tuples_sel <- c(1000)
    grid_n_tuples_exc <- c(25000)
    grid_n_subspaces  <- c(10)
-   grid_dedup        <-  0.8
+   grid_dedup        <- c(0.7, 0.8)
 }
 
 
@@ -297,14 +297,14 @@ for (w_subspaces in grid_w_subspaces){
          score_function = score_function,
          algo = "4S"
       )
-
-      beamed_kNN <-  wrapper(
-         search_exact_kNN(clean_data_kNN, target, q = K,
-                          size_view = D, size_beam = D+2,
-                          logfun = writelog, outfun = writeout),
-         score_function = score_function,
-         algo = "Wrap_kNN"
-      )
+#
+#       beamed_kNN <-  wrapper(
+#          search_exact_kNN(clean_data_kNN, target, q = K,
+#                           size_view = D, size_beam = D+2,
+#                           logfun = writelog, outfun = writeout),
+#          score_function = score_function,
+#          algo = "Wrap_kNN"
+#       )
 
       }
 
@@ -437,13 +437,13 @@ for (n_noise in grid_n_noise){
             algo = "4S"
          )
 
-         beamed_kNN <-  wrapper(
-            search_exact_kNN(clean_data_kNN, target, q = K,
-                             size_view = D, size_beam = D+2,
-                             logfun = writelog, outfun = writeout),
-            score_function = score_function,
-            algo = "Wrap_kNN"
-         )
+#          beamed_kNN <-  wrapper(
+#             search_exact_kNN(clean_data_kNN, target, q = K,
+#                              size_view = D, size_beam = D+2,
+#                              logfun = writelog, outfun = writeout),
+#             score_function = score_function,
+#             algo = "Wrap_kNN"
+#          )
 
       }
 
@@ -577,13 +577,13 @@ for (n_tuples_sel in grid_n_tuples_sel){
             algo = "4S"
          )
 
-         beamed_kNN <-  wrapper(
-            search_exact_kNN(clean_data_kNN, target, q = K,
-                             size_view = D, size_beam = D+2,
-                             logfun = writelog, outfun = writeout),
-            score_function = score_function,
-            algo = "Wrap_kNN"
-         )
+#          beamed_kNN <-  wrapper(
+#             search_exact_kNN(clean_data_kNN, target, q = K,
+#                              size_view = D, size_beam = D+2,
+#                              logfun = writelog, outfun = writeout),
+#             score_function = score_function,
+#             algo = "Wrap_kNN"
+#          )
 
       }
 
@@ -724,13 +724,13 @@ for (n_tuples_exc in grid_n_tuples_exc){
             algo = "4S"
          )
 
-         beamed_kNN <-  wrapper(
-            search_exact_kNN(clean_data_kNN, target, q = K,
-                             size_view = D, size_beam = D+2,
-                             logfun = writelog, outfun = writeout),
-            score_function = score_function,
-            algo = "Wrap_kNN"
-         )
+#          beamed_kNN <-  wrapper(
+#             search_exact_kNN(clean_data_kNN, target, q = K,
+#                              size_view = D, size_beam = D+2,
+#                              logfun = writelog, outfun = writeout),
+#             score_function = score_function,
+#             algo = "Wrap_kNN"
+#          )
 
       }
 
@@ -866,14 +866,14 @@ for (n_subspaces in grid_n_subspaces){
             score_function = score_function,
             algo = "4S"
          )
-
-         beamed_kNN <-  wrapper(
-            search_exact_kNN(clean_data_kNN, target, q = K,
-                             size_view = D, size_beam = D+2,
-                             logfun = writelog, outfun = writeout),
-            score_function = score_function,
-            algo = "Wrap_kNN"
-         )
+#
+#          beamed_kNN <-  wrapper(
+#             search_exact_kNN(clean_data_kNN, target, q = K,
+#                              size_view = D, size_beam = D+2,
+#                              logfun = writelog, outfun = writeout),
+#             score_function = score_function,
+#             algo = "Wrap_kNN"
+#          )
 
       }
 
@@ -950,8 +950,6 @@ for (dedup in grid_dedup){
 
 
       # Runs Ziggy
-
-
       soft <- dedup
       hard <- NULL
       ziggy_view <- wrapper(
