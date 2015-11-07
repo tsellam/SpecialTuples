@@ -24,7 +24,7 @@ check_group <- function(col_set, dataset = data){
 
    if (length(col_set) == 1){
 
-      if (types == "numeric"){
+      if (types %in% c("numeric", "integer")){
          g <- ggplot(dataset, aes_string(x = col_set,
                                  fill='selection', color = 'selection')) +
               geom_histogram(position = "dodge", aes(y = ..density..))
@@ -53,7 +53,7 @@ check_group <- function(col_set, dataset = data){
 
    if (length(col_set) == 2){
 
-      if (all(types == "numeric")){
+      if (all(types %in% c("numeric", "integer"))){
 
          g <- ggplot(dataset, aes_string(x = col_set[1],
                                       y = col_set[2],
@@ -107,7 +107,7 @@ preprocess <- function(data,  nbins=4){
     types <- sapply(data, class)
 
     # Trivial case
-    if (all(types == "numeric")){
+    if (all(types %in% c("numeric", "integer"))){
         cat("Only numeric variables\n")
         return(data)
     }
@@ -118,8 +118,8 @@ preprocess <- function(data,  nbins=4){
         data[[col]] <- factor(data[[col]])
 
    # Doing additions
-   if (any(types == 'numeric')){
-      num_col  <-  names(types[types %in% c("numeric")])
+   if (any(types %in% c('numeric', 'integer'))){
+      num_col  <-  names(types[types %in% c("numeric", "integer")])
       num_data <- data[,num_col]
       for (col in num_col)
          num_data[[col]] <- cut(data[[col]], nbins)
@@ -151,10 +151,10 @@ compute_uni_stats <- function(data, exclude_cols = c()){
 
    # Gets and checks types types
    data_types <- sapply(data, class)
-   if (!all(data_types %in% c("numeric", "factor")))
+   if (!all(data_types %in% c("numeric", "integer", "factor")))
       stop("Data frame contains wrong types")
 
-   num_cols <- names(data_types[data_types == "numeric"])
+   num_cols <- names(data_types[data_types %in% c("numeric", "integer")])
    cat_cols <- names(data_types[data_types == "factor"])
 
    # First numeric values
@@ -528,10 +528,10 @@ compute_bi_stats <- function(data, uni_stats,
 
    # Gets and checks types
    data_types <- sapply(data, class)
-   if (!all(data_types %in% c("numeric", "factor")))
+   if (!all(data_types %in% c("numeric", "integer", "factor")))
       stop("Data frame contains wrong types")
 
-   num_cols <- names(data_types[data_types == "numeric"])
+   num_cols <- names(data_types[data_types %in% c("numeric", "integer")])
    cat_cols <- names(data_types[data_types == "factor"])
 
    # First, numeric values
@@ -901,11 +901,52 @@ zig_aggregate <- function(zig_components, zig_coef){
 ########################
 # View search function #
 ########################
+change_point <- function(o_series){
+
+   # Trivial case
+   if (length(o_series) < 4) return(length(o_series))
+
+   # Prep data
+   series <- cumsum(o_series)
+
+   # Statistics
+   means <- sapply(2:length(series)-1, function(i){
+      c(
+         m1 = mean(series[1:i]),
+         m2 = mean(series[(i+1):length(series)])
+      )
+   })
+   pooled_sd <- sd(series)
+
+   # Actual test
+   likelihoods <- sapply(2:length(series)-1, function(i){
+
+      l1 <- dnorm(series[1:i],
+                  means['m1', i],
+                  pooled_sd,
+                  log = T)
+
+      l2 <- dnorm(series[(i+1):length(series)],
+                  means['m2', i],
+                  pooled_sd,
+                  log = T)
+
+      sum(l1, l2)
+   })
+
+   return(which.max(likelihoods))
+
+}
+
+
+
+
 search_views <- function(K, D, zig_scores,
                          offline_depdendencies,
                          hard_dep_threshold = NULL,
                          soft_dep_threshold = NULL,
-                         fill_NAs = TRUE){
+                         fill_NAs = TRUE,
+                         auto_stop = FALSE){
    if (!length(zig_scores) == 4 |
        !is.numeric(K)  | K < 1 |
        !is.numeric(D)  | D < 1 )
@@ -970,11 +1011,9 @@ search_views <- function(K, D, zig_scores,
 
    for (k in 1:K){
 
-      zig  <- 0
-      view    <- data_frame('column' =  character())
+      col_zigs <- c()
+      view     <- data_frame('column' =  character())
       old_columns  <- data_frame('column' = unlist(views))
-      #old_columns  <- data_frame('column' = unlist(views))
-      #max_sum_dependency <- nrow(old_columns) * D * soft_dep_threshold
 
       # Removes redundant candidates - hard threshold
       if (!is.null(hard_dep_threshold)){
@@ -1075,11 +1114,14 @@ search_views <- function(K, D, zig_scores,
             selection <- filtered_candidates %>%
                         mutate(zig = bi_zig + zig1 + zig2 ) %>%
                         filter(zig == max(zig, na.rm = T)) %>%
-                        select(column1, column2, zig)
+                        mutate(zig_min = min(zig1, zig2), zig_max = max(zig1, zig2),
+                               delta_zig = zig_min + bi_zig) %>%
+                        select(column1, column2, zig_max, delta_zig)
 
             view_cols <- as.character(selection[1, c('column1', 'column2')])
             view <- data.frame('column'  = view_cols, stringsAsFactors = F)
-            zig  <- as.numeric(selection[1,'zig'])
+            col_zigs  <- c(as.numeric(selection[1,'zig_max']),
+                           as.numeric(selection[1,'delta_zig']))
             next
          }
 
@@ -1100,7 +1142,6 @@ search_views <- function(K, D, zig_scores,
                                      delta_uni_zig = first(zig1))
 
          if (nrow(left_edges) < 1 & nrow(right_edges) < 1){
-            #cat("Breaking search early, for k=", k, "\n")
             break
          }
 
@@ -1113,21 +1154,24 @@ search_views <- function(K, D, zig_scores,
                            filter(row_number(delta_zig) == 1)
 
          if (nrow(best_col) < 1){
-            #cat("Breaking search early, for k=", k, "\n")
             break
          }
 
 
          # And appends it!
-         view <- best_col %>%
-                  select(column) %>%
-                  rbind_list(view)
-
-         zig <- zig + best_col$delta_zig[[1]]
+         view <- rbind_list(view, select(best_col, column))
+         col_zigs <- c(col_zigs, best_col$delta_zig[[1]])
 
       }
 
-   zigs[[k]]  <- zig
+   if (auto_stop){
+      cp <- change_point(col_zigs)
+      col_zigs <- col_zigs[1:cp]
+      view <- view %>% slice(1:cp)
+    }
+
+
+   zigs[[k]]  <- sum(col_zigs)
    views[[k]] <- view
 
    }

@@ -3,7 +3,7 @@ source("graph-utils.R")
 library(dplyr)
 library(tidyr)
 
-FOLDER <- "04-11"
+FOLDER <- "06-11"
 
 ###############
 # PREPARATION #
@@ -37,8 +37,7 @@ out_file <- out_file %>%
                mutate(algo = ifelse(algo == "Ziggy",
                                 paste0(algo, "_soft", soft_thres,
                                              "_hard", hard_thres),
-                                algo)) %>%
-               filter(!soft_thres %in% c(0.2, 0.8))
+                                algo))
 
 
 log_file <- log_file %>%
@@ -91,18 +90,18 @@ to_plot <- out_file %>%
             filter(experiment == "VarySubspaceWidth") %>%
             filter(grepl("- F1", key)) %>%
             mutate(F1 = as.numeric(value)) %>%
-            select(n_noise, algo, F1)
+            select(w_subspaces, algo, F1)
 
 to_plot <- to_plot %>%
-           group_by(algo, n_noise) %>%
+           group_by(algo, w_subspaces) %>%
            summarize(F1 = mean(F1, na.rm = T)) %>%
            ungroup
 
-all_combis <-  unique(merge(to_plot$n_noise, to_plot$algo))
-colnames(all_combis) <- c("n_noise", "algo")
-to_plot <- left_join(all_combis, to_plot, by =  c("n_noise", "algo"))
+all_combis <-  unique(merge(to_plot$w_subspaces, to_plot$algo))
+colnames(all_combis) <- c("w_subspaces", "algo")
+to_plot <- left_join(all_combis, to_plot, by =  c("w_subspaces", "algo"))
 
-p1 <- ggplot(to_plot, aes(x = n_noise, y = F1, color = algo, fill= algo)) +
+p1 <- ggplot(to_plot, aes(x = w_subspaces, y = F1, color = algo, fill= algo)) +
         geom_line() +
          geom_point() +
         scale_x_continuous(name = "Subspace Width") +
@@ -113,6 +112,37 @@ p1 <- prettify(p1) +
     theme(axis.text.x = element_text(angle = 15, hjust = 1))
 
 print(p1)
+
+# Diversity
+to_plot <- out_file %>%
+   filter(experiment == "VarySubspaceWidth") %>%
+   filter(grepl("Diversity", key)) %>%
+   mutate(Diversity = as.numeric(value)) %>%
+   select(w_subspaces, algo, Diversity)
+
+to_plot <- to_plot %>%
+   group_by(algo, w_subspaces) %>%
+   summarize(Diversity = mean(Diversity, na.rm = T)) %>%
+   ungroup
+
+all_combis <-  unique(merge(to_plot$w_subspaces, to_plot$algo))
+colnames(all_combis) <- c("w_subspaces", "algo")
+to_plot <- left_join(all_combis, to_plot, by =  c("w_subspaces", "algo"))
+
+p1bis <- ggplot(to_plot, aes(x = w_subspaces, y = Diversity, color = algo, fill= algo)) +
+   geom_line() +
+   geom_point() +
+   scale_x_continuous(name = "Subspace Width") +
+   scale_y_continuous(name = "Diversity")
+
+
+p1bis <- prettify(p1bis) +
+   theme(axis.text.x = element_text(angle = 15, hjust = 1))
+
+print(p1bis)
+
+
+
 
 #ggsave("../documents/plots/tmp_view-scores.pdf", p1,
 #       width = 16, height = 4, units = "cm")
@@ -139,6 +169,7 @@ to_plot <- left_join(all_combis, to_plot, by =  c("n_noise", "algo"))
 
 p2 <- ggplot(to_plot, aes(x = n_noise, y = F1, color = algo, fill= algo)) +
    geom_line() +
+   geom_point() +
    scale_x_continuous(name = "Noise Columns") +
    scale_y_continuous(name = "Accuracy - F1", limits=c(0,1))
 
@@ -172,6 +203,7 @@ to_plot <- left_join(all_combis, to_plot, by =  c("n_tuples_sel", "algo"))
 
 p3 <- ggplot(to_plot, aes(x = n_tuples_sel, y = F1, color = algo, fill= algo)) +
    geom_line() +
+   geom_point() +
    scale_x_continuous(name = "N tuples in target") +
    scale_y_continuous(name = "Accuracy - F1", limits=c(0,1))
 
@@ -205,7 +237,7 @@ p4 <- ggplot(to_plot, aes(x = n_tuples, y = Time, color = algo, fill= algo)) +
    geom_line() +
    geom_point() +
    scale_x_continuous(name = "N tuples") +
-   scale_y_continuous(name = "Time (s)", limits=c(0,2))
+   scale_y_continuous(name = "Time (s)")
 
 
 p4 <- prettify(p4) +
@@ -235,7 +267,7 @@ p4 <- ggplot(to_plot, aes(x = n_columns, y = Time, color = algo, fill= algo)) +
    geom_line() +
    geom_point() +
    scale_x_continuous(name = "N columns") +
-   scale_y_continuous(name = "Time (s)", limits=c(0,20))
+   scale_y_continuous(name = "Time (s)")
 
 
 p4 <- prettify(p4) +
@@ -265,7 +297,9 @@ to_plot2 <- out_file %>%
    filter(experiment == "VaryDeduplication") %>%
    filter(grepl("Diversity", key)) %>%
    mutate(Diversity = as.numeric(value)) %>%
-   select(algo, soft_thres, hard_thres, Diversity)
+   select(algo, soft_thres, hard_thres, Diversity) %>%
+   group_by(algo, soft_thres, hard_thres) %>%
+   summarise(Diversity = mean(Diversity, na.rm = T))
 
 to_plot <- to_plot1 %>%
    inner_join(to_plot2, by=c('algo', 'soft_thres', 'hard_thres')) %>%
