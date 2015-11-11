@@ -11,6 +11,8 @@
 \usepackage{algpseudocode}
 \usepackage{algorithm}
 \usepackage{enumitem}
+\usepackage{multirow}
+
 
 \usepackage{color}
 \usepackage{tabulary}
@@ -26,13 +28,14 @@
 \newcommand{\rv}{\ensuremath{\mathcal}}
 \newcommand{\rb}{\ensuremath{\mathbf}}
 \newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\nott}{\ensuremath{\overline{t}}}
 
 
 
 \begin{document}
 
 \title{``Hey Ziggy, What Am I Looking At?''\\
-Characterizing Tuples With Natural Language}
+Describing Tuples for Data Explorers}
 
 \numberofauthors{3}
 \author{
@@ -57,43 +60,15 @@ Martin Kersten\\
 \end{abstract}
 
 
-%\category{H.2.8}{Database Applications}{Data mining}
-%\keywords{Data exploration}
+\category{H.2.8}{Database Applications}{Data mining}
+\keywords{Data exploration}
 
 \input{Content}
 
-\section{Acknowledgements}
+\section{Acknowledgments}
 This publication was supported by the Dutch national program COMMIT.
 
 \bibliographystyle{abbrv}
 %\balance
 \bibliography{MME}
-
-\section*{[Private] Appendix: Ziggy vs.Claude}
-\label{zigvsclaude}
-We may now wonder: if we set $\mf{D}$ as the KL divergence, what is the
-difference between Claude and Ziggy?  Suppose that we ignore the penalty factor
-(we set $\lambda=0$). Then Ziggy tries to maximize:
-$$
-KL\big(\rb{x} | t=0 \ ; \  \rb{x} | t=1 \big)
-$$
-Intuitively, this is the distance between $\rb{x} | t=0$ and $\rb{x} | t=1$.
-On the other hand, Claude maximizes $I(\rb{x}, t)$. With a bit of playing
-around, we can show that this is equivalent to maximizing:
-$$
-    KL\big(\rb{x} | t=0 \ ; \  \rb{x} \big) + 
-        KL\big(\rb{x} | t=1 \ ; \  \rb{x} \big)
-$$
-Here, we are interested in the distance between $\rb{x} | t=i$ and a central
-distribution $\rb{x}$. 
-
-There is a triangular relationship between these expressions:
-\begin{figure}[h!]
-  \centering
-  \includegraphics[width=0.6\columnwidth]{Figures/Triangle}
-  \label{pic:triangle}
-\end{figure}
-
-I wonder if they are not actually equivalent!
-
 \end{document}

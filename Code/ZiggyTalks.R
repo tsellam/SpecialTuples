@@ -63,10 +63,11 @@ generate_table_diff <- function(tables_sel, tables_exc){
 
 describe_correlation_variation <- function(sel_corr, exc_corr, cor_diff){
 
+   r <- runif(1) > .5
+
    lapply(1:length(sel_corr), function(i){
 
 
-      r <- runif(1) > .5
 
       if (exc_corr[i] >= 0){
 
@@ -230,6 +231,11 @@ comment_2d_cat <- function(descriptions){
 ziggy_talk_about <- function(view, zig_scores){
 
    cat("\n\n")
+
+   if (nrow(view) < 1){
+      cat('Nothing to say. sorry!\n')
+      break
+   }
 
    #############################################
    # For a start, collect things to talk about #
@@ -400,16 +406,21 @@ ziggy_talk_about <- function(view, zig_scores){
                select(column1, observation, description) %>%
                spread(observation, description, fill = list('effect'='no_effect'))
 
-   nulls <- sapply(talk_sections_num_1D$Mean, is.null)
-   talk_sections_num_1D$Mean[nulls] <- list('effect'='no_effect')
+   if (nrow(talk_sections_num_1D) >= 1){
 
-   nulls <- sapply(talk_sections_num_1D$Variance, is.null)
-   talk_sections_num_1D$Variance[nulls] <- list('effect'='no_effect')
+      nulls <- sapply(talk_sections_num_1D$Mean, is.null)
+      talk_sections_num_1D$Mean[nulls] <- list('effect'='no_effect')
 
-   talk_sections_num_1D <- talk_sections_num_1D %>%
-               mutate(comment = comment_1d_num(Mean, Variance),
-                      column2 = NA) %>%
-               select(column1, column2, comment)
+      nulls <- sapply(talk_sections_num_1D$Variance, is.null)
+      talk_sections_num_1D$Variance[nulls] <- list('effect'='no_effect')
+
+
+      talk_sections_num_1D <- talk_sections_num_1D %>%
+                  mutate(comment = comment_1d_num(Mean, Variance),
+                         column2 = NA) %>%
+                  select(column1, column2, comment)
+
+   }
 
    exceptions <- talk_about %>%
       filter(!exclude) %>%
@@ -452,6 +463,8 @@ ziggy_talk_about <- function(view, zig_scores){
    ##################
    # Final WRAP-UP! #
    ##################
+
+   # The exceptional effects are B-S
 
    # Intro phrase
    intro_phrases <- c(
@@ -509,7 +522,7 @@ ziggy_talk_about <- function(view, zig_scores){
 
                if (runif(1) > 0.5) {
                cap <- FALSE
-               trans_words <- c(' Additionaly,', ' Also,', ' Moreover,')
+               trans_words <- c(' Additionally,', ' Also,', ' Moreover,')
                cat(trans_words[runif(1, min=1, max = length(trans_words))])
 
                } else {
@@ -567,55 +580,56 @@ ziggy_talk_about <- function(view, zig_scores){
          # Writing the actual comment
          cat(',', cur_comment)
 
-         # Exceptional columns
-         col_exc <- to_describe %>%
-                     filter(exceptional = TRUE) %>%
-                     select(column1, column2) %>%
-                     distinct()
 
-         if(nrow(col_exc) > 1 & length(col1) > 1){
-
-            if (nrow(col_exc) == length(col1)){
-               if (runif(1) > 0.5)
-                  cat(' (these effects have an exceptional intensity)')
-               else
-                  cat(' (these are particularly strong effects)')
-
-            } else {
-
-               e_col1 <- col_exc$column1
-               e_col2 <- col_exc$column2
-
-               cat(' (especially on ')
-               if (all(is.na(col2))){
-                  if (length(col1) == 1){
-                     cat(col1[1], sep='')
-                  } else if (length(col1) == 2){
-                     cat(col1[1], ' and ', col1[2], sep='')
-                  } else {
-                     cat(paste0(col1[1:length(col1 -1)],collapse=', '),
-                         ' and ', col1[length(col1)], sep='')
-                  }
-
-               } else {
-                  if (length(col1) == 1){
-                     cat(col1[1], ' and ', col2[1], sep='')
-                  } else if (length(col1) == 2){
-                     cat(col1[1], '-', col2[1],
-                         ', and ', col1[2], '-', col2[2], sep='')
-                  } else {
-                     sapply(1:(length(col1)-1), function(i){
-                        cat(col1[i], '-', col2[i], ', ', sep='')
-                     })
-                     cat(' and ', col1[length(col1)], '-', col2[length(col1)], sep='')
-                  }
-
-               }
-               cat(")")
-
-            }
-
-         }
+#          # Exceptional columns
+#          col_exc <- to_describe %>%
+#                      filter(exceptional = TRUE) %>%
+#                      select(column1, column2) %>%
+#                      distinct()
+#
+#          if(nrow(col_exc) > 1 & length(col1) > 1){
+#
+#             if (nrow(col_exc) == length(col1)){
+#                if (runif(1) > 0.5)
+#                   cat(' (these effects have an exceptional intensity)')
+#                else
+#                   cat(' (these are particularly strong effects)')
+#
+#             } else {
+#
+#                e_col1 <- col_exc$column1
+#                e_col2 <- col_exc$column2
+#
+#                cat(' (especially on ')
+#                if (all(is.na(col2))){
+#                   if (length(col1) == 1){
+#                      cat(col1[1], sep='')
+#                   } else if (length(col1) == 2){
+#                      cat(col1[1], ' and ', col1[2], sep='')
+#                   } else {
+#                      cat(paste0(col1[1:length(col1 -1)],collapse=', '),
+#                          ' and ', col1[length(col1)], sep='')
+#                   }
+#
+#                } else {
+#                   if (length(col1) == 1){
+#                      cat(col1[1], ' and ', col2[1], sep='')
+#                   } else if (length(col1) == 2){
+#                      cat(col1[1], '-', col2[1],
+#                          ', and ', col1[2], '-', col2[2], sep='')
+#                   } else {
+#                      sapply(1:(length(col1)-1), function(i){
+#                         cat(col1[i], '-', col2[i], ', ', sep='')
+#                      })
+#                      cat(' and ', col1[length(col1)], '-', col2[length(col1)], sep='')
+#                   }
+#
+#                }
+#                cat(")")
+#
+#             }
+#
+#          }
 
 
 
@@ -634,10 +648,18 @@ ziggy_talk_about <- function(view, zig_scores){
       n_forgotten <- talk_about %>%
                      filter(exclude == TRUE) %>%
                      nrow
-
       if (n_forgotten > 0)
-         cat(' ***  I discarded ', n_forgotten,
-             ' effects, considered as weak.', sep = '')
+         cat(' ***  I discarded ', n_forgotten/nrow(talk_about) *100,
+             '% effects, considered as weak.\n', sep = '')
+
+      # Reports counts of exceptional effects
+      n_exceptional <- talk_about %>%
+         filter(exceptional== TRUE) %>%
+         nrow
+      if (n_exceptional > 0)
+         cat(' ***  I reported ', n_exceptional/nrow(talk_about) *100,
+             '% exceptional effects.\n', sep = '')
+
 
 
 
