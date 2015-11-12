@@ -15,7 +15,7 @@
 
 
 \usepackage{color}
-\usepackage{tabulary}
+\usepackage{tabularx}
 \usepackage[table]{xcolor}
 
 \usepackage{framed}
@@ -37,31 +37,44 @@
 \title{``Hey Ziggy, What Am I Looking At?''\\
 Describing Tuples for Data Explorers}
 
-\numberofauthors{3}
-\author{
-\alignauthor
-Thibault Sellam\\
-       \affaddr{CWI\\Amsterdam, the Netherlands}\\
-       \email{thibault.sellam@cwi.nl}
-\alignauthor
-Emmanuel M\"uller\\
-    \affaddr{HPI\\Potsdam, Germany}\\
-     \email{emmanuel.mueller@kit.edu}
-\alignauthor
-Martin Kersten\\
-       \affaddr{CWI\\Amsterdam, the Netherlands}\\
-       \email{martin.kersten@cwi.nl}
-}
+%\numberofauthors{3}
+%\author{
+%\alignauthor
+%Thibault Sellam\\
+%       \affaddr{CWI\\Amsterdam, the Netherlands}\\
+%       \email{thibault.sellam@cwi.nl}
+%\alignauthor
+%Emmanuel M\"uller\\
+%    \affaddr{HPI\\Potsdam, Germany}\\
+%     \email{emmanuel.mueller@kit.edu}
+%\alignauthor
+%Martin Kersten\\
+%       \affaddr{CWI\\Amsterdam, the Netherlands}\\
+%       \email{martin.kersten@cwi.nl}
+%}
 
 \maketitle
 
-\begin{abstract}
-    This is my abstract.
+\begin{abstract} 
+The aim of data exploration is to get acquainted with an unfamiliar database.
+Typically, explorers operate by trial and error: they submit a query, study the
+result, and refine their query subsequently. In this paper, we investigate how
+to help them understand their query results. In particular, we focus on medium
+to high dimension spaces. If the database contains dozens or hundreds of
+columns, which variables should they inspect? Our approach is the following: we
+detect subspaces inside which the users' selection has an unusual distribution
+compared to the rest of the database. From this idea, we built Ziggy, a tuple
+description engine. Ziggy can detect informative subspaces, but it can also
+explain why it recommends them, using natural language and visualizations. Thus
+users are engaged in a veritable conversation with their data exploration tool.
+We first present the general problem of characterizing tuples with multiple
+views. We then describe Ziggy in detail. Finally, we showcase our system with a
+use case and evaluate it with a wide range of real and synthetic data.
 \end{abstract}
 
 
 \category{H.2.8}{Database Applications}{Data mining}
-\keywords{Data exploration}
+\keywords{Data exploration, subspace search, feature selection}
 
 \input{Content}
 
@@ -69,6 +82,6 @@ Martin Kersten\\
 This publication was supported by the Dutch national program COMMIT.
 
 \bibliographystyle{abbrv}
-%\balance
+\balance
 \bibliography{MME}
 \end{document}

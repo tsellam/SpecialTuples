@@ -194,7 +194,7 @@ algorithms would reject the view presented in Figure~\ref{pic:sameMean}. For
 us, this view is perfectly acceptable. 
 \begin{table*}[t]
     \centering
-    \begin{tabular}{|c|c|c|c|p{7cm}|}
+    \begin{tabular}{ccccp{8cm}}
       \hline
       Property & Type 1 & Type 2 & Zig-Component & Comments\\
       \hline
@@ -203,7 +203,7 @@ us, this view is perfectly acceptable.
       \sigma_{\overline{t}}}$&  Known as Glass' $\Delta$  \\
 
      Stand. Dev.& Contin.  & - &
-      $ \mf{z}_\sigma (d_t, d_{\nott}) =  \frac{\sigma_T - \sigma_{\overline{t}}}{ \sigma_{\overline{t}}}$ & \\
+      $ \mf{z}_\sigma (d_t, d_{\nott}) =  \frac{\sigma_t - \sigma_{\overline{t}}}{ \sigma_{\overline{t}}}$ & \\
     
       Frequencies & Discrete & - & 
     $  \mf{z}_\chi (d_t, d_{\nott}) =  \sqrt{\frac{\chi^2}{N(k - 1)}}$ & Known
@@ -243,17 +243,17 @@ completely \emph{explainable}  mass dissimilarity measure.
 
 The main idea behind the Zig-Dissimilarity is to compute several simple,
 interpretable indicators of difference, called \textbf{Zig-Components}, and
-aggregate them with a weighted sum.  Consider for instance two sets of tuples
-$\rb{D}_t$ and $\rb{D}_{\nott}$ with $M_\rb{D}$ columns. If these sets have the
-same average for every column, then they probably come from the same
+aggregate them in a single composite score.  Consider for instance two sets of
+tuples $\rb{D}_t$ and $\rb{D}_{\nott}$ with $M_\rb{D}$ columns. If these sets
+have the same average for every column, then they probably come from the same
 distribution. Oppositely, if the averages are different, then they may come
 from different distributions. From this observation, we build a simple
 dissimilarity measure: for each column $m$, we compute the differences between
-the means $\mu^m_t - \mu^m_{\nott}$. We obtain a vector of $M_D$ 
-Zig-Components. We could add more components by testing other properties: for example, we
-could measure the difference between the variance of each columns.
-We then aggregate these components into one composite
-indicator: this is is the Zig-Dissimilarity.
+the means $\mu^m_t - \mu^m_{\nott}$. We obtain a vector of $M_D$
+Zig-Components. We could add more components by testing other properties: for
+example, we could measure the difference between the variance of each columns.
+We then aggregate these components into one composite indicator: this is is the
+Zig-Dissimilarity.
 
 \begin{definition}
     A Zig-Component is a function $\mf{z} : \rb{D}\times\rb{D} \to \mathbb{R}$
@@ -394,7 +394,7 @@ maximize the former while constraining the latter.
 Ziggy operates in two steps. First, it computes the individual Zig-Components
 for all the columns in the database. Then, it composes the views in a  greedy
 manner. For each view, Ziggy detects which columns are eligible (i.e., do not
-violate the redundancy constraint) and it adds those with the highest
+violate the redundancy constraint) and it adds those associated with the highest
 Zig-Components.
 
 The first step is straightforwards, but it is also by far the most time
@@ -429,8 +429,8 @@ variables of $\rb{D}^{i}$ the final score is:
     \begin{multline}
 \Delta\mf{D} = 
 z_\mu(d_t, d_{\nott}) +
-z_\sigma(d_t, d_{\nott}) \\
-+ \sum_{d' \in \rb{D}^i_{num}} z_r([d_t, d_t'], [d_{\nott}, d_{\nott}'])
+z_\sigma(d_t, d_{\nott}) +
+\sum_{d' \in \rb{D}^i_{num}} z_r([d_t, d_t'], [d_{\nott}, d_{\nott}']) \\
 + \sum_{d' \in \rb{D}^i_{cat}} z_V([d_t, d_t'], [d_{\nott}, d_{\nott}'])
 \end{multline}
 %\end{equation}
@@ -463,17 +463,18 @@ a variant of the knapsack problem.}
 
 \begin{figure}[t!]
     \centering
-    \begin{subfigure}[b]{0.8\columnwidth}
+    \begin{subfigure}[b]{\columnwidth}
     \includegraphics[width=\textwidth]{Figures/Staging}
     \caption{Computing $\mf{z}_\mu$ without staging.}
     \label{pic:withoutstag}
     \end{subfigure}
 
-    \begin{subfigure}[b]{.8\columnwidth}
+    \begin{subfigure}[b]{\columnwidth}
         \includegraphics[width=\textwidth]{Figures/Staging2}
     \caption{Computing  $\mf{z}_\mu$  with staging.}
     \label{pic:withstag}
     \end{subfigure}
+    \caption{Our staging strategy.}
 \end{figure}
 
 We now discuss how to compute the Zig-Components for each column of the
@@ -592,18 +593,16 @@ Ziggy's model relies on three parameters: the total number of views $K$ to
 generate, the width of the views $D$, and the dependency threshold $L$. We know
 discuss how to set these parameters.
 
-\textbf{Number of Views K.} Interpreting this parameter is straightforward: a
-high $K$ leads to more information, but also potentially insignificant views
-and a lengthier output. When should we stop? We propose to generate as many
-views as possible, and delegate the final decision to the users - after all, we
-have little idea about what they seeking. In practice, we can do so lazily:
-we start with a small selection of views (e.g., as many as the display can
-contain), and we generate the remainder on demand, for instance with a ``show
-me more'' button.  In our experience, the number of views stays
-manageable because the algorithm is blocked by the redundancy constraint:
-after a certain number of views, Ziggy finds no more columns to exploit. If the
-views have a low confidence (as detailed in Section~\ref{sec:validation}), then
-Ziggy issues a warning.
+\textbf{Number of Views K.} When should we stop producing views? We propose to
+generate as many views as possible, and delegate the final decision to the
+users - after all, we have little idea about what they seeking. In practice, we
+can do so lazily: we start with a small selection of views (e.g., as many as
+the display can contain), and we generate the remainder on demand, for instance
+with a ``show me more'' button.  In our experience, the number of views stays
+manageable because the algorithm is blocked by the redundancy constraint: after
+a certain number of views, Ziggy finds no more columns to exploit. If the views
+have a low confidence (as detailed in Section~\ref{sec:validation}), then Ziggy
+issues a warning.
 
 \textbf{Size of the Views D.}  A low D with leads to many small views, while a
 large value leads to a few large views. Which value describes the data most
@@ -624,11 +623,85 @@ default, we use $\mf{S}_{hard}$, and we limit to $L=0.99$. This setting
 enforces that the views are non-overlapping, but it adds no other constraint -
 we see this as a safe option.
 
+\textbf{Zig-Components.} Previously, we proposed several Zig-Components, in
+order to capture a wide range of effects. In practice, nothing forces to use
+them all. For instance, a user interested in quick and concise results may
+prefer to ignore the bivariate components.
+
 
 \section{Report Generation}
 \label{sec:reporting}
-We now detail how Ziggy describes the views.
-{\color{red} I have 1-2 pages of content for this Section. Work in progress.}
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{Figures/ReportGeneration}
+  \caption{Ziggy's report generation pipeline.}
+  \label{pic:reportpipeline}
+\end{figure}
+
+\begin{table}[t!]
+    \centering
+    \begin{tabular}{| p{4.2cm} | c | c |}
+      \hline
+      Description & Exceptional? & Weak?\\
+      \hline
+      $\mf{z_\mu} \geq 0$ and $\mu_{\nott} \geq 0$: ``increase'' &
+          \multirow{4}{*}{$z_\mu$ in top 5\%} & 
+            \multirow{2}{*}{$|\mf{z_\mu}| < 0.2$}\\
+      $\mf{z_\mu} \geq 0$ and $\mu_{\nott} < 0$: ``decrease'' &
+      &\\
+      $\mf{z_\mu} < 0$ and $\mu_{\nott} \geq0$: ``increase'' &
+       &\multirow{2}{*}{$p_\mu < 0.01$}\\
+      $\mf{z_\mu} < 0$ and $\mu_{\nott} < 0$: ``decrease'' &
+      &\\
+      \hline
+    \end{tabular}
+    \caption{Example of handwritten rules for the difference of
+        means $\mf{z_\mu}$. The variable $p_\mu$ describes the p-value, as
+    described in Section~\ref{sec:validation}.} 
+\label{tab:handwritten}
+\end{table}
+
+We explained how our system detects views. We now detail Ziggy's report generation
+pipeline, through which it justifies its choices. 
+
+Ziggy describes its views one by one. For each view, it generates a report,
+comprising a few sentences in natural languages and several charts. The aim of
+the text is to give a general presentation of how the tuples differ from the
+rest of the data. The charts let users inspect the details.
+Figure~\ref{pic:reportpipeline} illustrates how Ziggy proceeds. First, it
+gathers all the Zig-Components associated with each columns of the database. It
+then generates a short description for each component, using hand-written rules
+such as those presented in the first column of Table~\ref{tab:handwritten}. It
+also evaluates each component, using three grades: ``weak'', ``neutral'' and
+``exceptional'', using the confidence scores discussed in
+Section~\ref{sec:validation}, the absolute value of the effect and its relative
+value compared to other variables, as shown in the same table. These grades
+will influence how Ziggy presents the statistics: the weak values are treated
+separately, and the strong values are emphasized. To set the thresholds, we
+took inspiration from classic statistics textbooks~\cite{cohen1977statistical},
+and chose conservative options.  Nevertheless, these quantities are inherently
+arbitrary. It is therefore important to communicate our thresholds to the end
+users, and motivate each decision with the corresponding rule.
+
+Once Ziggy has collected, labeled and rated the Zig-Comp\-onents, it  groups
+the columns which have the same ``profile'', that is, the same variations on the
+same components. It then generates one sentence for each group, such that
+each sentence has the same structure: \texttt{on [column\_names], the
+[zig-component] [label]}. If several components are involved, as in
+Figure~\ref{pic:reportpipeline}, the Ziggy enumerates all the pairs
+\texttt{[zig-component] [label]}. At this point, the text produced is
+understandable, but it is also highly redundant and grammatically incorrect. During the
+rewriting phase, Ziggy applies a set of rules to remedy this situation. Such
+rules include inserting connectors (e.g., ``Additionally'', ``Finally''), using
+random synonyms (e.g., ``the tuples'', ``the selection'', ``your data'') or
+replacing wider chunks of text (e.g., ``has a lower variance'' by ``spreads
+more widely'').
+
+Additionally, Ziggy provides visualizations. By default, it only displays the
+exceptional effects, and it produces the remainder on demand. To determine
+which type of visualization to use, Ziggy checks the type of the columns, and
+it applies usual practices: it uses density plots and histograms for one
+dimension data, and scatterplots and heat maps for two-dimension data.
 
 \section{Use Case}
 \label{sec:usecase}
@@ -709,7 +782,7 @@ Exceptional and Weak.}
 \end{table}
 \begin{figure*}[!ht]
   \centering
-  \includegraphics[width=1.8\columnwidth]{Figures/ZigUseCase}
+  \includegraphics[width=2\columnwidth]{Figures/UseCase}
   \caption{Ziggy's explanations for Views 1 and 4}
   \label{pic:zigdetail}
 \end{figure*}
@@ -759,24 +832,39 @@ regression line is flat, with a high offset, which indicates that all these
 regions are relatively rich, regardless of their patent statistics.
 
 The second view offers a different perspective. The first and third charts show
-that innovative regions tend to be safer. Indeed, the variable
-\texttt{Assault\_rate} is usually correlated with \texttt{Homicide\_rate}. But
-in our case, this correlation is inverted. This reflects the fact that assaults
-do exist in our innovative regions, but little of them actually lead to a
-homicide. The last chart is more puzzling: there normally exists no
-relationship between \texttt{Assault\_rate} and
-\texttt{Current\_account\_balance}. And indeed, we expect these variables to be
-independent, because they describe completely different topics. And yet, in the
-innovative regions, a clear correlation appears. How can we interpret this
-effect? If this dependence completely spurious? Alternatively, are those
+that innovative regions tend to be safer, but the relationship is not
+straightforward. Ziggy points out that these regions have less extreme values
+on \texttt{Assault\_rate}, but the mean is similar. Also, the usual
+correlation between \texttt{Assault\_rate} and \texttt{Homicide\_rate} is
+inverted. This reflects the fact that assaults do exist in our innovative
+regions, but little of them actually lead to a homicide. The last chart is more
+puzzling: there normally exists no relationship between \texttt{Assault\_rate}
+and \texttt{Current\_ac\-count\_balance}. And indeed, we expect these variables
+to be independent, because they describe completely different topics. Yet,
+in the innovative regions, a clear correlation appears. How can we interpret
+this effect? If this dependence completely spurious? Alternatively, are those
 variables cofounded by a third, hidden variable? Or maybe sane public accounts
-causes anger among inventors? As absurd as this last hypothesis may seem, we
-have no way to discard it. We leave this question open for future investigations.
+causes anger among inventors? As implausible as this last hypothesis may seem, this
+chart gives us no way to discard it. We leave the question open for future
+investigations.
 
 \section{Experiments}
 \label{sec:experiments}
-{\color{red} I easily have 2-3 pages of content for this section. Work in
-progress.}
+
+We now present our experimental results. We want to evaluate three aspects of
+our system: the \emph{quality} the views, their \emph{diversity}, and Ziggy's
+\emph{runtime}. To evaluate the quality of the views, we simulate our users with
+statistical classifiers. Intuitively, we assume that if a classifier can learn from a view,
+then so can a real user. Technically, we train a classifier, using
+the view $\textbf{D}^i$ as feature set and the user's selection $\bf{t}$ as
+target. We then test the classifier: if it can accurately predict $\bf{t}$ from
+$\textbf{D}^i$, then we can infer the selection has a recognizable
+statistical structure on these columns. Therefore, the view contains
+exploitable information. Oppositely, if the classifier cannot reconstruct the
+user's selection, then either the classifier is poor, or the view contains no
+information about the selection. We use a 5-Nearest Neighbor classifier, and we
+report the F1 measure with 5 cross-validation - higher is better.
+
 
 \section{Related Work}
 \label{sec:related-works}
@@ -799,7 +887,7 @@ I still have to read about metric learning.}
 %KL\big(\rb{x} | t=0 \ ; \  \rb{x} | t=1 \big)
 %$$
 %Intuitively, this is the distance between $\rb{x} | t=0$ and $\rb{x} | t=1$.
-%On the other hand, Claude maximizes $I(\rb{x}, t)$. With a bit of playing
+%On the other hand, Claude maximizes $I(\rb{x}, t)$. With a bit of playinFirst, look at columns AvgIncome and YearsOfEducation. Observe that the mean….g
 %around, we can show that this is equivalent to maximizing:
 %$$
 %    KL\big(\rb{x} | t=0 \ ; \  \rb{x} \big) + 
