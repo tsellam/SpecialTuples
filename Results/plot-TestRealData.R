@@ -3,7 +3,7 @@ source("graph-utils.R")
 library(dplyr)
 library(tidyr)
 
-FOLDER <- "04-11"
+FOLDER <- "06-11"
 
 ###############
 # PREPARATION #
@@ -36,15 +36,12 @@ log_file <- rbind_all(file_contents)
 ##########################
 # Filters and Prettifies #
 ##########################
-
+black_list <- c('diabetic_data', 'insurance')
 out_file <- out_file %>%
                mutate(algo = ifelse(algo == "Ziggy",
                                 paste0(algo, "_soft", soft_thres,
                                              "_hard", hard_thres),
                                 algo))
-
-
-
 log_file <- log_file %>%
    mutate(algo = ifelse(algo == "Ziggy",
                         paste0(algo, "_soft", soft_thres,
@@ -54,56 +51,51 @@ log_file <- log_file %>%
 
 # black_list <-  c("internet_usage.arff", "insurance.arff")
  out_file <- out_file %>%
-               mutate(file = sub(".arff", "", file))
-#             filter(!file %in% black_list) %>%
-#             mutate(file = sub(".arff", "", file)) %>%
-#             mutate(algo = factor(algo, levels = c("ApproximativePrune",
-#                                                   "Approximative",
-#                                                   "4S",
-#                                                   "4S_official",
-#                                                   "Clique",
-#                                                   "Exhaustive",
-#                                                   "Wrap_kNN"),
-#                                         labels = c("ApproximativePrune",
-#                                                   "Claude",
-#                                                   "4S",
-#                                                   "4S_official",
-#                                                   "Clique",
-#                                                   "Exact",
-#                                                   "Wrap 5-NN"))) %>%
-#             mutate(file = factor(file,
-#                                  levels = c("adult", "communities", "musk",
-#                                             "magic", "pendigits", "bank",
-#                                             "insurance", "breast", "letrec"),
-#                                  labels = c("USCensus", "Crime", "MuskMolecules",
-#                                             "MAGICTelescope", "PenDigits", "BankMarketing",
-#                                             "Insurance", "BreastCancer", "LetterRecog")))
-#
-# log_file <- log_file %>%
-#     filter(!file %in% black_list) %>%
-#     filter(!algo %in% c("Wrap_NaiveBayes", "4S_official")) %>%
-#     mutate(file = sub(".arff", "", file)) %>%
-#     mutate(algo = factor(algo, levels = c("ApproximativePrune",
-#                                           "Approximative",
-#                                           "4S",
-#                                           "4S_official",
-#                                           "Clique",
-#                                           "Exhaustive",
-#                                           "Wrap_kNN"),
-#                          labels = c("ApproximativePrune",
-#                                     "Claude",
-#                                     "4S",
-#                                     "4S_official",
-#                                     "Clique",
-#                                     "Exact",
-#                                     "Wrap 5-NN"))) %>%
-#     mutate(file = factor(file,
-#                          levels = c("adult", "communities", "musk",
-#                                     "magic", "pendigits", "bank",
-#                                     "insurance", "breast", "letrec"),
-#                          labels = c("USCensus", "Crime", "MuskMolecules",
-#                                     "MAGICTelescope", "PenDigits", "BankMarketing",
-#                                     "Insurance", "BreastCancer", "LetterRecog")))
+               mutate(file = sub(".arff", "", file)) %>%
+              filter(!file %in% black_list) %>%
+    mutate(file = factor(file,
+                   levels = c("adult", "communities", "musk",
+                              "magic", "pendigits", "bank",
+                              "insurance", "breast", "letrec"),
+                   labels = c("USCensus", "Crime", "MuskMolecules",
+                              "MAGICTelescope", "PenDigits", "BankMarketing",
+                              "Insurance", "BreastCancer", "LetterRecog"))) %>%
+    mutate(algo = factor(algo, levels = c("Ziggy_soft0.3_hard0",
+                                          "Ziggy_soft0_hard0.99",
+                                          "Approximative",
+                                          "4S",
+                                          "Clique",
+                                          "Wrap_kNN"),
+                         labels = c("Ziggy-Soft",
+                                    "Ziggy-Hard",
+                                    "Claude",
+                                    "4S",
+                                    "Clique",
+                                    "Wrap 5-NN")))
+
+log_file <- log_file %>%
+    mutate(file = sub(".arff", "", file)) %>%
+    filter(!file %in% black_list) %>%
+    mutate(file = factor(file,
+                         levels = c("adult", "communities", "musk",
+                                    "magic", "pendigits", "bank",
+                                    "insurance", "breast", "letrec"),
+                         labels = c("USCensus", "Crime", "MuskMolecules",
+                                    "MAGICTelescope", "PenDigits", "BankMarketing",
+                                    "Insurance", "BreastCancer", "LetterRecog")))%>%
+   mutate(algo = factor(algo, levels = c("Ziggy_soft0.3_hard0",
+                                         "Ziggy_soft0_hard0.99",
+                                         "Approximative",
+                                         "4S",
+                                         "Clique",
+                                         "Wrap_kNN"),
+                        labels = c("Ziggy-Soft",
+                                   "Ziggy-Hard",
+                                   "Claude",
+                                   "4S",
+                                   "Clique",
+                                   "Wrap 5-NN")))
+
 
 #####################
 # Plots view scores #
@@ -139,8 +131,12 @@ p1 <- prettify(p1) +
 
 print(p1)
 
-#ggsave("../documents/plots/tmp_view-scores.pdf", p1,
-#       width = 16, height = 4, units = "cm")
+ggsave("Real-Accuracy.pdf", p1,
+       width = 16, height = 4, units = "cm")
+if (exists("DO_IT")){
+   system('source ~/.bash_profile ; pdfcrop Real-Accuracy.pdf ../Paper/Plots/Real-Accuracy.pdf')
+}
+
 
 
 ####################
@@ -158,19 +154,30 @@ to_plot <- to_plot %>%
 
 all_combis <-  unique(merge(to_plot$file, to_plot$algo))
 colnames(all_combis) <- c("file", "algo")
-to_plot <- left_join(all_combis, to_plot, by =  c("algo", "file"))
+to_plot <- left_join(all_combis, to_plot, by =  c("algo", "file")) %>%
+               mutate(xceeds = ifelse(Diversity > 50, 'X', ''))
 
 p2 <- ggplot(to_plot, aes(x = file, y = Diversity,
-                          fill = algo, color=algo)) +
+                          fill = algo, color=algo, label=xceeds)) +
    geom_bar(stat = "identity", position = "dodge", width=.75) +
+   geom_text(aes(y=48), color="grey30",
+             position = position_dodge(width=.75), size=2) +
    scale_x_discrete(name = "Dataset") +
-   scale_y_continuous(name = "Diversity - F1")
+   scale_y_continuous(name = "#Distinct Columns")+
+   coord_cartesian(ylim = c(0,50))
 
 
 p2 <- prettify(p2) +
    theme(axis.text.x = element_text(angle = 15, hjust = 1))
 
 print(p2)
+
+ggsave("Real-Diversity.pdf", p2,
+       width = 16, height = 4, units = "cm")
+if (exists("DO_IT")){
+   system('source ~/.bash_profile ; pdfcrop Real-Diversity.pdf ../Paper/Plots/Real-Diversity.pdf')
+}
+
 
 ####################
 # Plots time spent #
@@ -183,13 +190,13 @@ to_plot <- log_file %>%
 all_combis <-  unique(merge(to_plot$file, to_plot$algo))
 colnames(all_combis) <- c("file", "algo")
 to_plot <- left_join(all_combis, to_plot, by =  c("algo", "file")) %>%
-            mutate(xceeds = ifelse(is.na(Time), "X", ""))
+            mutate(xceeds = ifelse(is.na(Time) | Time > 30, "X", ""))
 
 to_plot[is.na(to_plot)] <- 3600
 
 p3 <- ggplot(to_plot, aes(x = file, y = Time, fill = algo, color=algo, label = xceeds)) +
     geom_bar(stat = "identity", position = "dodge", width=.75) +
-    geom_text(aes(y=55), color="black",
+    geom_text(aes(y=28), color="grey30",
               position = position_dodge(width=.75), size=2) +
     scale_x_discrete(name="Dataset") +
     scale_y_continuous(name="Execution Time (s)") +
@@ -200,67 +207,75 @@ p3 <- prettify(p3) +
 
 
 print(p3)
+ggsave("Real-Runtime.pdf", p3,
+       width = 16, height = 4, units = "cm")
+if (exists("DO_IT")){
+   system('source ~/.bash_profile ; pdfcrop Real-Runtime.pdf ../Paper/Plots/Real-Runtime.pdf ;
+          cd ../Paper ; ./renderPDF.sh')
+}
 
 
-##################################
-# Plots deduplication efficiency #
-##################################
-to_plot1 <- out_file %>%
-   filter(experiment == "VaryDeduplication") %>%
-   select(file, soft_thres, hard_thres, key, value) %>%
-   filter(grepl("- F1", key)) %>%
-   mutate(value = as.numeric(value)) %>%
-   group_by(file, soft_thres, hard_thres) %>%
-   summarise(F1 = mean(value, na.rm = T))
-
-to_plot2 <- out_file %>%
-   filter(experiment == "VaryDeduplication") %>%
-   select(file, soft_thres, hard_thres, key, value) %>%
-   filter(grepl("Diversity", key)) %>%
-   mutate(Diversity = as.numeric(value)) %>%
-   select(-key, -value)
-
-
-to_plot <- to_plot1 %>%
-            inner_join(to_plot2, by = c('file', 'soft_thres', 'hard_thres')) %>%
-            gather(threshold_type, threshold_value, soft_thres, hard_thres,
-                   convert = TRUE) %>%
-            filter(threshold_value > 0)
-
-#to_plot <- filter(to_plot, file == 'adult')
-
-
-
-
-# Effect on diversity (constant or decreasing)
-p4 <- ggplot(to_plot, aes(x = threshold_value,
-                          y = Diversity,
-                          color = threshold_type)) +
-      geom_line() +
-      geom_point() +
-      facet_wrap(~file)
-
-p4 <- prettify(p4) +
-   theme(axis.text.x = element_text(angle = 15, hjust = 1))
-
-
-print(p4)
-
-
-# Effect on F1 (constant of increasing)
-p5 <- ggplot(to_plot, aes(x = threshold_value,
-                          y = F1,
-                          color = threshold_type)) +
-      geom_line() +
-      geom_point() +
-      scale_y_continuous(limits=c(0,1)) +
-      facet_wrap(~file)
-
-p5 <- prettify(p5) +
-   theme(axis.text.x = element_text(angle = 15, hjust = 1))
-
-
-print(p5)
+#
+#
+# ##################################
+# # Plots deduplication efficiency #
+# ##################################
+# to_plot1 <- out_file %>%
+#    filter(experiment == "VaryDeduplication") %>%
+#    select(file, soft_thres, hard_thres, key, value) %>%
+#    filter(grepl("- F1", key)) %>%
+#    mutate(value = as.numeric(value)) %>%
+#    group_by(file, soft_thres, hard_thres) %>%
+#    summarise(F1 = mean(value, na.rm = T))
+#
+# to_plot2 <- out_file %>%
+#    filter(experiment == "VaryDeduplication") %>%
+#    select(file, soft_thres, hard_thres, key, value) %>%
+#    filter(grepl("Diversity", key)) %>%
+#    mutate(Diversity = as.numeric(value)) %>%
+#    select(-key, -value)
+#
+#
+# to_plot <- to_plot1 %>%
+#             inner_join(to_plot2, by = c('file', 'soft_thres', 'hard_thres')) %>%
+#             gather(threshold_type, threshold_value, soft_thres, hard_thres,
+#                    convert = TRUE) %>%
+#             filter(threshold_value > 0)
+#
+# #to_plot <- filter(to_plot, file == 'adult')
+#
+#
+#
+#
+# # Effect on diversity (constant or decreasing)
+# p4 <- ggplot(to_plot, aes(x = threshold_value,
+#                           y = Diversity,
+#                           color = threshold_type)) +
+#       geom_line() +
+#       geom_point() +
+#       facet_wrap(~file)
+#
+# p4 <- prettify(p4) +
+#    theme(axis.text.x = element_text(angle = 15, hjust = 1))
+#
+#
+# print(p4)
+#
+#
+# # Effect on F1 (constant of increasing)
+# p5 <- ggplot(to_plot, aes(x = threshold_value,
+#                           y = F1,
+#                           color = threshold_type)) +
+#       geom_line() +
+#       geom_point() +
+#       scale_y_continuous(limits=c(0,1)) +
+#       facet_wrap(~file)
+#
+# p5 <- prettify(p5) +
+#    theme(axis.text.x = element_text(angle = 15, hjust = 1))
+#
+#
+# print(p5)
 
 #ggsave("../documents/plots/tmp_view-times.pdf", p2,
 #       width = 16, height = 4, units = "cm")

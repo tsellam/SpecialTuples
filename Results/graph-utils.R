@@ -7,7 +7,7 @@ library(scales)
 #########
 # Utils #
 #########
-save_plots <- function(file, ..., keep_legend=FALSE, pdfwidth=18, pdfheight=3.3){
+save_plots <- function(file, ..., keep_legend=FALSE, pdfwidth=18, pdfheight=4){
     # Util
     g_legend<-function(a.gplot){
         tmp <- ggplot_gtable(ggplot_build(a.gplot))
@@ -46,6 +46,6 @@ prettify <- function(chart, ...) {
 
     chart <- chart + theme(legend.title=element_blank(),
                            axis.title = element_text(size = 6),
-                            legend.key.height=unit(8,"pt"))#,
-                            #plot.margin=unit(c(0.3,0.3,0.3,0.3),"cm"))
+                            legend.key.height=unit(8,"pt"),
+                            plot.margin=unit(c(0.3,0.3,0.3,0.3),"cm"))
 }
