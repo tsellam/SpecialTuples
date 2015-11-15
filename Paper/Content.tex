@@ -21,20 +21,20 @@ then which variables should the users inspect? Furthermore, which
 our data explorers know where to look.  Yet, studying each possibility in turn
 can turn out to be a slow, tedious process. This beats the purpose of a data
 exploration system.
-\begin{framed}
-    \everypar={{\setbox0=\lastbox}\everypar{}}
-    In an exploration context, how can we describe a set of tuples when the
-    database contains more than a dozen columns?
-\end{framed}
+%\begin{framed}
+%    \everypar={{\setbox0=\lastbox}\everypar{}}
+\textbf{How can we describe an arbitrary set of tuples when the
+database contains more than a dozen columns?}
+%\end{framed}
 
 The straightforward approach is to use multidimensional visualizations such as
 parallel coordinates or small multiples. Unfortunately, these methods tend to
 show every possible aspect of the data, thus they do not scale well. For
 instance, we would need at least 50 small multiples to visualize a dataset with
 only 10 columns. Dimensionality reduction algorithms such as PCA or ICA are
-also common, but they ignore the user's selection, hence they may
-miss interesting combinations.  Besides, their output is harder to interpret
-because they transform the variables.
+also common, but they ignore the user's selection, and hence may
+miss interesting combinations.  Besides, they rescale and rotate the
+variables, causing their output to be harder to interpret.
 
 In this paper we introduce our approach, \emph{multi-view subset
 characterization}. The key idea is to detect subspaces inside which the user's
@@ -45,49 +45,93 @@ given subset of a database, Ziggy automatically generates a description of the
 tuples with natural language and visualizations.  Thus, plugged on top of a
 database engine, Ziggy can veritably simulate a conversation: the
 user issues queries, and Ziggy replies in natural language. Our system can
-process 10,000s tuples on dozens of variables in less within a second, and it can cope with
+process 10,000s tuples on dozens of variables within a second, and it can cope with
 both numerical and nominal data, including missing values.  Thus, it can
 readily replace the output of a data exploration system. To summarize, here are
-our contributions:
-\begin{itemize}
-    \item We present and formalize the multi-view subset characterization problem
-    \item We Ziggy, a fast and robust system to describe selections of tuples
-        in natural language
+our contributions: \begin{itemize0}
+    \item We introduce and formalize the multi-view subset characterization problem.
+    \item We describe Ziggy, a simple, efficient and robust system to describe
+        selections of tuples in natural language
     \item We apply our system to real-life situations and benchmark it against
-        state-of-the-art feature selection algorithms
-\end{itemize}
+        state-of-the-art algorithms
+\end{itemize0}
 
-Our paper is built as follows. First, we discuss how to detect database views
-in which a given set of tuple is ``special''. We expose the problem in its
-generality, and discuss its relation to other methods, such as feature
-selection. Second, we instantiate our problem with a custom objective function,
-designed to yield interpretable results. Our function aggregates several
-well-known statistical tests, carried out in a systematic, purposely
-brute-force way.  Finally, we discuss how to describe the views with natural
-language, and how to check the robustness of our results.
+Our paper is built as follows. In Section~\ref{sec:problem}, we introduce our
+general problem statement. We instantiate this problem in
+Section~\ref{sec:instantiation} and describe our algorithms in
+Section~\ref{sec:algorithm}. We discuss how to validate our results and
+report them in Sections~\ref{sec:validation} and~\ref{sec:validation}. We
+describe how to set parameters in Section~\ref{sec:parameters}. In
+Sections~\ref{sec:usecase} and~\ref{sec:experiments}, we apply our solution to
+real and synthetic data. Finally, we present related works and conclude in
+Sections~\ref{sec:related-works} and \ref{sec:conclusions}.
 
-\section{General Problem Formulation}
-\label{sec:problem}
+\section{Overview}
+\label{sec:overview}
 \begin{figure}
   \centering
-  \includegraphics[width=0.5\columnwidth]{Figures/Notations}
-  \caption{Notations.}
-  \label{pic:notations}
+  \includegraphics[width=\columnwidth]{Figures/Example}
+  \caption{Two examples of subspaces for which the user's selection has an
+  unusual distribution.}
+  \label{pic:example}
 \end{figure}
+Let us introduce our problem through an example. A government analyst tries to
+understand what demographic, social and economic factors lead to innovation.
+More specifically, she is interested in patents: in which parts of the world do
+individuals submit patents? What lessons can we learn? To answer this question,
+our analyst collects several databases with regional statistics, and loads them
+in her favorite business intelligence tool (possibly SQL-based, or
+spreadsheet-based). She selects the top 10\% regions for which many patents are
+submitted, and ends up with an overwhelming large table, with a few tuples and
+hundreds of columns. Besides preparing coffee, how can we help her?
+ 
+Our idea is to recommend views, which show how the selection of tuples differ
+from the rest of the database. Figure~\ref{pic:example} shows two of these
+views. We see that on the columns \texttt{Average Income} and \texttt{Yearly
+Production}, the tuples are gathered in top-right corner of the chart. The
+effect is even stronger on the second plot, which shows the variables
+\texttt{Years in Education} and \texttt{Number of Universities}. Observe that
+these views have a purposely low dimensionality. Our aim is not to show
+\emph{all} the variables on which the selection has an impact. Instead, we
+recommend a few small, non redundant groups, each illustrating one
+characteristic of the tuples. We call this approach \emph{multi-view subset
+characterization}.
 
-{\color{red} Here, I need to give a high level introduction to motivate our
-approach - in particular why we use multiple views}
+Once we detected the views, we can depict them with visualizations as in
+Figure~\ref{pic:example}. The merits of this approach is hardly disputable, in
+particular compared to tables. And yet, analyzing charts takes time and
+training. Also, not all effects are perceptible, in particular when the views
+contain three dimensions or more. Lastly, charts are simply not accessible to
+visually impaired users. To address these problems, we propose to exploit a
+different communication channel: we generate natural language descriptions of
+the views. For instance, we could describe the views pictured in
+Figure~\ref{pic:example} as follows:
+\begin{quotation}
+    Observe the columns~\texttt{Average Income} and \texttt{Year\-ly Production}.
+    Your selection has a high value and high concentration on both of the
+    variables. The effect is similar and stronger on \texttt{Years in
+    Education} and \texttt{Number of Universities}.
+\end{quotation}
+Note that we \emph{describe} the data, but we do not \emph{interpret} it. The
+latter problem is much harder, and we claim in no way to have solved it. We
+will however attempt to issue some simple judgements, such as ``this effect is
+particularly strong'', by applying hand-written rules.
 
-Let the matrix $\rb{D}$ with $M$ columns and $N$ rows represent our database.
-We suppose that each tuple $\rb{x}_n = (x^1_n, \dots, x^M_n)^\top$ in the
-database is an iid. sample from some unknown distribution
-$p(\rb{x}_n)=p(\rb{x})$. We represent each column with a vector $\rb{x}^{m}=
-(x^m_1, \dots, x^m_N)^\top$.  The user specifies a ``special'' selection of
-tuples, described by the vector $\rb{t} = (t_1, \ldots, t_n)^\top$: $t_i=1$ if
-the tuple is chosen, 0 otherwise. We refer to the tuples in the selection as
-${\rb{D}}_t$, and the remaining tuples as ${\rb{D}}_{\overline{t}}$. We refer
-to the underlying distributions as $p(\rb{x}|t)$ and $p(\rb{x}|\overline{t})$
-respectively. We illustrate these notations with Figure~\ref{pic:notations}.
+
+\section{General problem statement}
+\label{sec:problem}
+Let us now formalize the multi-view characterization problem. We represent our
+database with the matrix $\rb{D}$, with $M$ columns and $N$ rows.  We represent
+each tuples by an iid. random vector  $\rb{x}_n = (x^1_n, \dots, x^M_n)^\top$,
+and each column by  $\rb{x}^{m}= (x^m_1, \dots, x^m_N)^\top$. The user
+specifies a ``special'' selection of tuples, described by the vector $\rb{t} =
+(t_1, \ldots, t_n)^\top$: $t_i=1$ if the tuple is chosen, 0 otherwise. We refer
+to the tuples in the selection as ${\rb{D}}_t$, the remaining tuples as
+${\rb{D}}_{\overline{t}}$. 
+
+Let $\rb{V}$ describe a view (i.e., subspace, or set of columns). To measure
+how much ${\rb{D}}_t$ and ${\rb{D}}_{\overline{t}}$ differ, we compare their
+probability distributions. 
 
 Our model is based on a user-specified \textbf{mass dissimilarity measure}
 $\mf{D}(\rb{D}, \rb{D}')$, which measures the difference between two groups of
@@ -116,12 +160,6 @@ data}.
     \rb{x}^d]$ with at most $D$ dimensions which maximize: $ \mf{D}\big(
     \rb{D}^i_t ; \rb{D}^i_{\overline{t}} \big)$ (ignoring column permutations).
 \end{problem}
-\begin{figure}
-  \centering
-  \includegraphics[width=0.5\columnwidth]{Figures/SameMean}
-  \caption{Example of interesting view. {\color{red}This figure is really ugly.}}
-  \label{pic:sameMean}
-\end{figure}
 
 This approach is simple, but it can lead to redundancy: a small number
 of good columns may dominate the results and appear in all $K$ views. In a data
@@ -766,39 +804,35 @@ Exceptional and Weak.}
   \caption{Ziggy's explanations for Views 1 and 4}
   \label{pic:zigdetail}
 \end{figure*}
-We now present a real-life use case. Our general aim is to understand what
-demographic, social and economic factors lead to innovation. More specifically,
-we are interested in patents: in which parts of the world do individuals
-submit patents? What lessons can we learn?
+We now apply Ziggy on the real use case which inspired our running example.
+Our aim is to understand which factors lead to innovation, and more
+specifically patents.  To answer this questions, we aggregated several
+databases from the OECD, an international economic organization. All the data
+we used may be found online\footnote{http://stats.oecd.org/}. Our core dataset
+is the \texttt{Patents per Region} database, which contains 15 years of patent
+statistics for 2,180 regions in 31 countries. We augmented this set with
+several other region-level databases (\texttt{Demographics per Region} and
+\texttt{Labour per Region}) and country-level indicators (\texttt{Better Life},
+\texttt{Well Being} and \texttt{Innovation Indicators}).  We obtain a table
+with about 6,823 rows and 519 columns, including mixed types and missing
+values. We filtered out the categorical columns with more than 20 distinct
+values (e.g., primary keys, countries and region names). 
 
-To answer these questions, we aggregated several databases from the OECD, an
-international economic organization. All the data we used may be found
-online\footnote{http://stats.oecd.org/}. Our core dataset is the
-\texttt{Patents per Region} database, which contains 15 years of patent statistics
-for 2,180 regions in 31 countries. We augmented this set with several other
-region-level databases: \texttt{Demographics per Region} and \texttt{Labour per
-Region}. Finally, we added country-level information: we used the sets
-\texttt{Better Life}, \texttt{Well Being} and \texttt{Innovation Indicators}.
-We obtain a table with about 6,823 rows and 519 columns, including mixed types
-and missing values. We filtered out the categorical columns with
-more than 20 distinct values (e.g., primary keys, countries and region names).
 Our selection of tuples contains the top 10\% regions for the statistic
 \texttt{patent applications per million inhabitant}. We set $D=6$ with the
 adaptive stopping method described in Section~\ref{sec:parameters}, and we used
-$\mf{S}_{hard}$, with a maximum value of $L=0.75$.
-Ziggy detects a total of 12 views, which columns are reported in
-Table~\ref{tab:ziggysviews}.
+$\mf{S}_{hard}$, with a maximum value of $L=0.75$.  Ziggy detects a total of 12
+views, which columns are reported in Table~\ref{tab:ziggysviews}.
 
-Some of Ziggy's choices are not surprising. For
-instance, the first column mentioned in the Table is precisely the variable we
-used to define our selection. The second one,
-$\texttt{PCT\_patent\_applications}$ is highly similar (the PCT is an
-international patent treaty, which allows transnational patents). Likewise, we
-expected some relationship between education and innovation (views 2, 6 and
-10). However, some effects are less straightforward. How does
-\texttt{Emp.\_work\_very\_long\_hours} impact innovation? Are patents produced
-at work, or during hobby time? Similarly, how do our innovative regions behave
-on the variable~\texttt{Job\_security}?
+Some of Ziggy's choices were not surprising to us. For instance, the first
+column mentioned in the Table is precisely the variable we used to define our
+selection. The second one, $\texttt{PCT patent applications}$ is highly similar
+(the PCT is an international patent treaty, which allows transnational
+patents). Likewise, we expected some relationship between education and
+innovation (views 2, 6 and 10). However, some effects are less straightforward.
+How does \texttt{Employees working very long\- hours} impact innovation? Are
+patents produced at work, or during hobby time? Similarly, how do our
+innovative regions behave on the variable~\texttt{Job security}?
 
 Figure~\ref{pic:zigdetail} presents Ziggy's explanations for two views. To
 obtain this figure, we made only two edits: we removed some plots to save
@@ -806,7 +840,7 @@ space, and we inserted references to the charts in the text. Consequently, the
 figure illustrates accurately what Ziggy's users would obtain. The first view
 reflects the fact that innovative regions also have a high income. Ziggy
 expresses this through its comments about the
-variable~\texttt{Personal\_earnings}, but also through the last chart. As it
+variable~\texttt{Personal earnings}, but also through the last chart. As it
 points out, there is a correlation between patent applications and income, but
 this correlation disappears when we focus on innovative regions. Then, the
 regression line is flat, with a high offset, which indicates that all these
@@ -815,12 +849,12 @@ regions are relatively rich, regardless of their patent statistics.
 The second view offers a different perspective. The first and third charts show
 that innovative regions tend to be safer, but the relationship is not
 straightforward. Ziggy points out that these regions have less extreme values
-on \texttt{Assault\_rate}, but the mean is similar. Also, the expected
-correlation between \texttt{Assault\_rate} and \texttt{Homicide\_rate} is
+on \texttt{Assault rate}, but the mean is similar. Also, the expected
+correlation between \texttt{Assault rate} and \texttt{Homicide rate} is
 inverted. This reflects the fact that assaults do exist in our innovative
 regions, but little of them actually lead to a homicide. The last chart is more
-puzzling: there normally exists no relationship between \texttt{Assault\_rate}
-and \texttt{Current\_ac\-count\_balance}. And indeed, we expect these variables
+puzzling: there normally exists no relationship between \texttt{Assault rate}
+and \texttt{Current ac\-count balance}. And indeed, we expect these variables
 to be independent, because they describe completely different topics. Yet,
 in the innovative regions, a clear correlation appears. How can we interpret
 this effect? If this dependence completely spurious? Alternatively, are those
@@ -941,11 +975,11 @@ algorithms we present are single-threaded. The operating system is Fedora 16.
       Parameter & Value\\
       \hline
       Selection (tuples) & 3,000\\
-      Tuples from Gauss. Mixture & 15,000\\ 
-      Tuples from Unif. Distrib. & 15,000\\
-      Sep. / Non-sep. columns & 20 / 4\\
+      Tuples from Gauss. mixture & 15,000\\ 
+      Tuples from Unif. distrib. & 15,000\\
+      Sep. / Non-sep. variables & 20 / 4\\
       \hline
-      Num. dimensions Subspaces & 4\\
+      Num. dimensions subspaces & 4\\
       Num. components Gaussians& 5\\
       Mean / Variance Gaussians & Unif. in [-10,10] / [1, 20]\\
       Uniform noise & Unif. in [-45,45]\\
