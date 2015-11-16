@@ -1,7 +1,7 @@
-\documentclass{sig-alternate-2013}
+\documentclass{sig-alternate-2015}
 
-\clubpenalty=10000 
-\widowpenalty = 10000
+%\clubpenalty=10000 
+%\widowpenalty = 10000
 
 
 \usepackage{graphicx}
@@ -30,6 +30,14 @@
 \newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
 \newcommand{\nott}{\ensuremath{\overline{t}}}
 
+\newenvironment{itemize0}
+{ 
+    \begin{itemize}
+        \setlength{\itemsep}{0pt}
+        \setlength{\parskip}{0pt}
+        \setlength{\parsep}{0pt} 
+}
+{ \end{itemize}  }
 
 
 \begin{document}

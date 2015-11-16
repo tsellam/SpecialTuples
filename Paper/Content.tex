@@ -56,18 +56,18 @@ our contributions: \begin{itemize0}
         state-of-the-art algorithms
 \end{itemize0}
 
-Our paper is built as follows. In Section~\ref{sec:problem}, we introduce our
-general problem statement. We instantiate this problem in
+Our paper is built as follows. In Sections~\ref{sec:genoverview}
+and~\ref{sec:problem}, we present our problem. We instantiate this problem in
 Section~\ref{sec:instantiation} and describe our algorithms in
-Section~\ref{sec:algorithm}. We discuss how to validate our results and
-report them in Sections~\ref{sec:validation} and~\ref{sec:validation}. We
-describe how to set parameters in Section~\ref{sec:parameters}. In
+Section~\ref{sec:algorithm}. We discuss how to validate our results and report
+them in Sections~\ref{sec:validation} and~\ref{sec:reporting}. We describe how
+to set parameters in Section~\ref{sec:parameters}. In
 Sections~\ref{sec:usecase} and~\ref{sec:experiments}, we apply our solution to
 real and synthetic data. Finally, we present related works and conclude in
 Sections~\ref{sec:related-works} and \ref{sec:conclusions}.
 
 \section{Overview}
-\label{sec:overview}
+\label{sec:genoverview}
 \begin{figure}
   \centering
   \includegraphics[width=\columnwidth]{Figures/Example}
@@ -83,7 +83,7 @@ our analyst collects several databases with regional statistics, and loads them
 in her favorite business intelligence tool (possibly SQL-based, or
 spreadsheet-based). She selects the top 10\% regions for which many patents are
 submitted, and ends up with an overwhelming large table, with a few tuples and
-hundreds of columns. Besides preparing coffee, how can we help her?
+hundreds of columns. How can we help her?
  
 Our idea is to recommend views, which show how the selection of tuples differ
 from the rest of the database. Figure~\ref{pic:example} shows two of these
@@ -107,205 +107,200 @@ different communication channel: we generate natural language descriptions of
 the views. For instance, we could describe the views pictured in
 Figure~\ref{pic:example} as follows:
 \begin{quotation}
-    Observe the columns~\texttt{Average Income} and \texttt{Year\-ly Production}.
-    Your selection has a high value and high concentration on both of the
-    variables. The effect is similar and stronger on \texttt{Years in
-    Education} and \texttt{Number of Universities}.
+    On the columns~\texttt{Average Income} and \texttt{Year\-ly Production},
+    your selection has a high value and high concentration. The effect is
+    similar and stronger on \texttt{Years in Education} and \texttt{Number of
+    Universities}.
 \end{quotation}
 Note that we \emph{describe} the data, but we do not \emph{interpret} it. The
 latter problem is much harder, and we claim in no way to have solved it. We
-will however attempt to issue some simple judgements, such as ``this effect is
-particularly strong'', by applying hand-written rules.
+will however dare to issue simple ma\-gni\-tude judgments, such as ``this
+effect is particularly strong'', using conservative, transparent hand-written
+rules.
 
 
 \section{General problem statement}
 \label{sec:problem}
 Let us now formalize the multi-view characterization problem. We represent our
-database with the matrix $\rb{D}$, with $M$ columns and $N$ rows.  We represent
+database with a matrix $\rb{D}$, with $M$ columns and $N$ rows.  We model 
 each tuples by an iid. random vector  $\rb{x}_n = (x^1_n, \dots, x^M_n)^\top$,
-and each column by  $\rb{x}^{m}= (x^m_1, \dots, x^m_N)^\top$. The user
-specifies a ``special'' selection of tuples, described by the vector $\rb{t} =
-(t_1, \ldots, t_n)^\top$: $t_i=1$ if the tuple is chosen, 0 otherwise. We refer
-to the tuples in the selection as ${\rb{D}}_t$, the remaining tuples as
-${\rb{D}}_{\overline{t}}$. 
+and each column by  $\rb{x}^{m}= (x^m_1, \dots, x^m_N)^\top$.
 
-Let $\rb{V}$ describe a view (i.e., subspace, or set of columns). To measure
-how much ${\rb{D}}_t$ and ${\rb{D}}_{\overline{t}}$ differ, we compare their
-probability distributions. 
+Let the submatrix $\rb{V}  = [\rb{x}^1, \dots, \rb{x}^V]$ describe a view
+(i.e., subspace, or set of columns). We split this view in two:  ${\rb{V}}_t$
+contains the tuples in the selection, ${\rb{V}}_{\overline{t}}$ the remainder,
+as shown below:
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\columnwidth]{Figures/Notations}
+%  \caption{Our notations.}
+  \label{pic:notations}
+\end{figure}
 
-Our model is based on a user-specified \textbf{mass dissimilarity measure}
-$\mf{D}(\rb{D}, \rb{D}')$, which measures the difference between two groups of
-tuples. If the rows of $\rb{D}$ and $\rb{D}'$ are sampled from the same
-distribution, then $\mf{D}$ is very close to 0. If
-not, $\mf{D}$ grows with the dissimilarity of the distributions.
-Figure~\ref{pic:sameMean} gives an example of the latter case.  Here are some
-possible choices:
-\begin{itemize}
-    \item A simple option is to use the distance between centroids (possibly
-        weighted by the observed covariance)
-    \item A more general option is to estimate the Kullback-Leibler divergence:
-        $\mf{D}(\rb{D}, \rb{D}') \equiv KL(\hat{p}(\rb{x});
-        \hat{p}'(\rb{x}'))$, where $\hat{p}(\rb{x})$ and $\hat{p}'(\rb{x}')$
-        are density estimators. This approach is more general, as it can cope
-        with both continuous and categorical variables.
-    \item In the next section, we introduce our own mass dissimilarity.
-\end{itemize}
-Knowing this function $\mf{D}$, we can already propose a first, naive,
-formulation of our problem. \emph{We want to find groups of variables on which the
-distribution of the chosen tuples is different from that of the rest of the
-data}.
+
+To measure how much $\rb{V}_t$ and ${\rb{V}}_{\overline{t}}$ differ, we compare
+the empirical probability distribution of their rows. If these distributions
+differ, then the view exhibits some ``peculiarity'' of the data.  Therefore,
+$\rb{V}$ is likely to be informative. We measure this difference with a
+\textbf{mass dissimilarity measure} $\mf{D}(\rb{V}_t, \rb{V}_{\nott})$.  This
+function returns 0 if the tuples come from from the same distribution, it grows
+otherwise. The statistics literature contains several candidates, for example
+estimators the Kullback-Leibler Divergence~\cite{wasserman2013all}. We will
+present our own function in the following section.
+
+We can already propose a first, naive, formulation of our problem:
 \begin{problem}
     Consider a distribution dissimilarity function $\mf{D}$ and two integers
-    $K$ and $D$. Find the top $K$ distinct views $\rb{D}^i = [\rb{x}^1, \dots,
-    \rb{x}^d]$ with at most $D$ dimensions which maximize: $ \mf{D}\big(
-    \rb{D}^i_t ; \rb{D}^i_{\overline{t}} \big)$ (ignoring column permutations).
+    $K$ and $D$. Find the top $K$ distinct views $\rb{V}^i$ with at most $D$
+    dimensions which maximize: $ \mf{D}\big( \rb{V}^i_t ;
+    \rb{V}^i_{\overline{t}} \big)$ (ignoring column permutations).
 \end{problem}
 
-This approach is simple, but it can lead to redundancy: a small number
-of good columns may dominate the results and appear in all $K$ views. In a data
+This approach is simple, but it yields redundancy: a small number of good
+columns may dominate the results and appear in all $K$ views. In a data
 exploration scenario, users may value \emph{diversity}, even if the views are
 sub-optimal. To enforce this requirement, we introduce a penalty factor in our
-objective function. 
+objective function.
+\begin{table*}[t!]
+    \centering
+  \rowcolors{2}{gray!25}{white}
+    \begin{tabular}{ccccp{9cm}}
+      \hline
+    \rowcolor{gray!50}
+      Property & Type 1 & Type 2 & Zig-Component & Comments\\
+      \hline
+      Mean & Contin.  & - &
+      $  \mf{z}_m^{\bf{d}}  = (\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott}) / s_{\overline{t}}$ & 
+      Known as Glass' $\Delta$~\cite{hedges2014statistical}\\
+      Stand. Dev.& Contin.  & - &
+      $ \mf{z}_{\sigma}^{\bf{d}}=(s_t-s_{\nott})/s_{\overline{t}}$ & \\
+      Frequencies & Discrete & - & 
+      $\mf{z}_\chi ^{\bf{d}}= \chi^2$ &
+      Pearson's $\chi^2$ goodness-of-fit test~\cite{wasserman2013all}\\
+      Dependence & Contin. & Contin. & $\mf{z}_r^{\bf{d}, \bf{d}'}  = r_t - r_{\nott} $ & 
+      $r_t$is the correlation coefficient between $\bf{d}_t$ and  $\bf{d}'_t$\newline
+      $r_{\nott}$ is the correlation coefficient between $\bf{d}_{\nott}$ and
+      $\bf{d}'_{\nott}$~\cite{wasserman2013all}\\
+     Dependence  & Discrete & Both & $ \mf{z}_V^{\bf{d}, \bf{d}'} = V_t - V_{\nott} $ &
+           $V_t$ is Cram\'er's V coefficient between $\bf{d}_t$ and  $\bf{d}'_t$ \newline
+           $V_{\nott}$ is Cram\'er's V coefficient between $\bf{d}_{\nott}$ and
+           $\bf{d}'_{\nott}$~\cite{cohen1977statistical} \\ 
+      \hline
+    \end{tabular}
+    \caption{Our choice of Zig-Components for different data types. Each
+        component describes a difference, to be evaluated for either each
+        column $\bf{d}$ or each couple of columns $\bf{d}, \bf{d}'$ in the
+        view. The notations $\bar{\bf{d}}$ and $s$ respectively represent the
+        sample mean and sample standard deviation. In the mixed-types case, we
+        discretize the continuous column with equi-width binning.}
+    \label{tab:dissim}
+\end{table*}
 
-To measure redundancy, we propose to use statistical dependency. The rationale
-is the following: if two sets of columns are tightly correlated, then there is
-a high chance that they describe the same property of the ``real world''.
-Oppositely, if they are independent, then they probably convey different types
-of information. From this observation, we introduce a new version of our
-problem: we seek views which maximize the distance statistic, while minimizing
-inter-view dependency.  We define this problem in a recursive way:
+Measuring redundancy between column is not straightforward, as this notion is
+partially subjective. In our model, we exploit statistical dependency: if two
+sets of columns are tightly correlated, then there is a high chance that they
+describe the same property of the ``real world''.  Oppositely, if they are
+independent, then they probably convey different types of information. From
+this observation, we introduce a new version of our problem: we seek views
+which maximize the distance statistic, while minimizing inter-view dependency.
+We define this problem in a recursive way:
 \begin{problem}
-    Suppose that we have already detected $i-1$ views, $i > 1$. We obtain
-    $\rb{D}^{1..i-1} =
-    [\rb{D}^1, \ldots, \rb{D}^{i-1}]$ by concatenating these views. Let
-    $\mf{S}$ describe a statistical dependency measure. Given a
-    positive real $\lambda$, find the view $\rb{D}^{i}$ with at most $D$
-    columns which maximizes:
+    Suppose that we have already detected $i-1$ views ($i > 1$,
+    $\rb{V}^{0} = \emptyset$). We obtain $\rb{V}^{1..i-1} = [\rb{V}^1, \ldots,
+    \rb{V}^{i-1}]$ by concatenating these views. Let $\mf{S}$ describe a
+    statistical dependency measure. Given a positive real $\lambda$, find the
+    view $\rb{V}^{i}$ with at most $D$ columns which maximizes:
         \begin{equation}
             \label{prob1}
-            \mf{D}\big( \rb{D}^{i}_t  ; \rb{D}^{i}_{\overline{t}} \big) - 
-            \lambda \cdot \mf{S} ( \rb{D}^{i} ; \rb{D}^{1..i-1})
+            \mf{D}\big( \rb{V}^{i}_t  ; \rb{V}^{i}_{\overline{t}} \big) - 
+            \lambda \cdot \mf{S} ( \rb{V}^{i} ; \rb{V}^{1..i-1})
         \end{equation}
 \end{problem}
-The statistics literature presents many options to instantiate the dependency
-measure $\mf{S}$. Well established examples are the correlation coefficient, or
-the mutual information. We will present our own function in
-Section~\ref{sec:dependency}.
+Statistics textbooks offer many options to instantiate the dependency measure
+$\mf{S}$. Well established examples are multivariate variants of the
+correlation coefficient, or the mutual information~\cite{wasserman2013all}.
+Here again, we will present our own function in Section~\ref{sec:dependency}.
 
 In Equation~\ref{prob1}, the parameter $\lambda$ controls the trade-off between
 mass distance and view diversity: a high value enforces that that the view are
 diverse, while a low value expresses our preference for maximizing $\mf{D}(
-\rb{D}^{i}_t  ; \rb{D}^{i}_{\overline{t}})$. In practice, this parameter is
+\rb{V}^{i}_t  ; \rb{V}^{i}_{\overline{t}})$. In practice, this parameter is
 not convenient because it has no intuitive scale. For some $L$, an
 equivalent way to express our problem is the following:
 \begin{equation}
     \label{prob2}
     \begin{aligned}
-        & \text{Argmax}_{\rb{D}^{i}} 
-            & \mf{D}\big( \rb{D}^{i}_t  ; \rb{D}^{i}_{\overline{t}} \big)\\
+        & \text{Argmax}_{\rb{V}^{i}} 
+            & \mf{D}\big( \rb{V}^{i}_t  ; \rb{V}^{i}_{\overline{t}} \big)\\
         & \text{s.t.} 
-        &\mf{S} ( \rb{D}^{i} ; \rb{D}^{1..i-1}) & < L\\ 
+        &\mf{S} ( \rb{V}^{i} ; \rb{V}^{1..i-1}) & < L\\ 
     \end{aligned}
 \end{equation}
 Equation~\ref{prob1} in the Lagrangian of Equation~\ref{prob2}, up to a
 negligible additive constant. We prefer this form because the trade-off
-parameter $L$ has the same scale as $\mf{S} ( \rb{D}^{i} ; \rb{D}^{1..i-1}) $.
-For example, if we instantiate $\mf{S}$ with the linear correlation, then $L$
-will simply describe the maximal acceptable correlation between $\rb{D}^{i}$
-and $\rb{D}^{1..i-1}$.
-
-\begin{table*}[t]
-    \centering
-    \begin{tabular}{ccccp{8cm}}
-      \hline
-      Property & Type 1 & Type 2 & Zig-Component & Comments\\
-      \hline
-      Mean        & Contin.  & - &
-      $  \mf{z}_\mu (d_t, d_{\nott}) = \frac{\mu_t - \mu_{\overline{t}}}{
-      \sigma_{\overline{t}}}$&  Known as Glass' $\Delta$  \\
-
-     Stand. Dev.& Contin.  & - &
-      $ \mf{z}_\sigma (d_t, d_{\nott}) =  \frac{\sigma_t - \sigma_{\overline{t}}}{ \sigma_{\overline{t}}}$ & \\
-    
-      Frequencies & Discrete & - & 
-    $  \mf{z}_\chi (d_t, d_{\nott}) =  \sqrt{\frac{\chi^2}{N(k - 1)}}$ & Known
-          as Cram\'er's V, $\chi^2$ represents the value of the
-          goodness-of-fit $\chi^2$ statistic between $d_t$ and $d_{\nott}$, $k$
-          is the number of distinct values.\\
-      
-          \hline
-      Dependence  & Contin. & Contin & $
-      \mf{z}_r ([d_t, d'_t ], [d_{\nott}, d'_{\nott} ]) =     r_t - r_{\overline{t}} $ & 
-      $r_t$ (resp. $r_{\nott}$) is the correlation coefficient between $d_t$
-      and  $d'_t$ (resp   $d_{\nott}$ and  $d'_{\nott}$ ) \\
-      Dependence  & Discrete & Both &
-
-      $ \mf{z}_V ([d_t, d'_t ], [d_{\nott}, d'_{\nott} ]) = V_t - V_{\overline{t}} $ &
-           $V_T$ (resp. $V_{\nott}$) is Cramer's V coefficient between $d_t$
-      and  $d'_t$ (resp   $d_{\nott}$ and  $d'_{\nott}$ ) \\ 
-      \hline
-    \end{tabular}
-\caption{Our choice of Zig-Components for different data types. The variable
-    $d$ and $d'$ represent columns with mean $\mu$ and
-    standard deviation $\sigma$. Note that in the bivariate case we actually compute statistics of statistics.}
-    \label{tab:dissim}
-\end{table*}
+parameter $L$ has the same scale as $\mf{S} ( \rb{V}^{i} ; \rb{V}^{1..i-1}) $.
+For example, if we instantiate $\mf{S}$ with correlation, then $L$ will simply
+describe the maximal acceptable correlation between $\rb{V}^{i}$ and
+$\rb{V}^{1..i-1}$.
 
 \section{Instantiation: Meet Ziggy}
 \label{sec:instantiation}
-Previously, we introduced our general problem, independently of any mass
-dissimilarity measure $\mf{D}$ or redundancy measure $\mf{S}$. We now
-instantiate these functions.
+We now instantiate the dissimilarity measure $\mf{D}$ and redundancy measure
+$\mf{S}$. 
 
 \subsection{Explainable Mass Dissimilarity}
 \label{sec:explain}
-Let us begin with the dissimilarity~$\mf{D}$. In principle, we could
-borrow any general divergence measure from the statistics literature, such
-as the KL-divergence. However, these measurements operate as ``black boxes'':
-they describe the intensity of the differences, but they do not explain how the
+Let us begin with the dissimilarity~$\mf{D}$. As mentioned previously, we could
+borrow any general divergence measure from the statistics literature, such as
+the KL-divergence. However, these measurements operate as ``black boxes'': they
+describe the intensity of the differences, but they do not explain how the
 tuples differ. Our approach is diametrically opposed: we introduce the
-\textbf{Zig-Dissimilarity} (Ziggy's Dissimilarity), a purposely naive, but
-completely \emph{explainable}  mass dissimilarity measure.
+\textbf{Zig-Dissimilarity}, a completely \emph{explainable}  mass dissimilarity
+measure.
 
-The main idea behind the Zig-Dissimilarity is to compute several simple,
+The idea behind the Zig-Dissimilarity is to compute several simple,
 interpretable indicators of difference, called \textbf{Zig-Components}, and
 aggregate them in a single composite score.  Consider for instance two sets of
-tuples $\rb{D}_t$ and $\rb{D}_{\nott}$ with $M_\rb{D}$ columns. If these sets
-have the same average for every column, then they probably come from the same
-distribution. Oppositely, if the averages are different, then they may come
-from different distributions. From this observation, we can build a simple
-dissimilarity measure: for each column $m$, we compute the differences between
-the means $\mu^m_t - \mu^m_{\nott}$. We obtain a vector of $M_D$
-Zig-Components. We could add more components by testing other properties: for
-example, we could measure the difference between the variance of each columns.
-Finally, we aggregate these components into one composite indicator: this is is the
-Zig-Dissimilarity.
+tuples $\rb{V}_t$ and $\rb{V}_{\nott}$ with $V$ columns. If these subsets have
+the same average for every column, then they probably come from the same
+distribution. Oppositely, if the averages are different, then they probably
+come from different distributions. From this observation, we can build a simple
+dissimilarity measure: for each column $\bf{d}$, we compute the differences
+between the means $\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott}$. We obtain
+a vector of $V$ Zig-Components. We could add more components by testing other
+properties: for example, we could measure the difference between the variance
+of each columns.  Finally, we aggregate these components into one composite
+indicator: this is is the Zig-Dissimilarity.
 
 \begin{definition}
-    A Zig-Component is a function $\mf{z} : \rb{D}\times\rb{D} \to \mathbb{R}$
+    A Zig-Component is a function $\mf{z} : \rb{V}\times\rb{V} \to \mathbb{R}$
     which describes one difference between two sets of tuples. If the tuples
-    are similar, then $\mf{z}(\rb{D}_t, \rb{D}_{\nott}) = 0$. If not,
-    the magnitude of $\mf{z}(\rb{D}_t, \rb{D}_{\nott})$ varies with the strength
+    are similar, then $\mf{z}(\rb{V}_t, \rb{V}_{\nott}) = 0$. If not,
+    the magnitude of $\mf{z}(\rb{V}_t, \rb{V}_{\nott})$ varies with the strength
     of the difference.
 \end{definition}
-For the sake of presentation, we  abbreviate $\mf{z}(\rb{D}_t, \rb{D}_{\nott})$ as~$\mf{z}$.
+For the sake of presentation, we  abbreviate $\mf{z}(\rb{V}_t, \rb{V}_{\nott})$
+as~$\mf{z}$.
 
 In our implementation, we combined five types of Zig-Com\-po\-nents, summarized
-in Table~\ref{tab:dissim}.  Most of them come from statistics textbooks, where
-they are referred to as \emph{effect sizes}~\cite{cohen1977statistical}. We
-chose these indicators because they have intuitive interpretations, as well as
-known asymptotic properties (we will use these properties in
-Section~\ref{sec:validation}). Observe how Ziggy deals with categorical data:
-for each subset $\rb{D}_t$ and $\rb{D}_{\nott}$, it computes one histogram per
-column, and estimates the difference in distribution with a normalized variant
-of the $\chi^2$ statistic. Ziggy also computes bivariate components: in this
-case it compares columns by groups of two. The idea is to check which
+in Table~\ref{tab:dissim}.  Most of them come from the statistics literature,
+where they are referred to as \emph{effect sizes}~\cite{cohen1977statistical,
+hedges2014statistical}.  We chose these indicators because they have intuitive
+interpretations, as well as known asymptotic properties (we will use those
+Section~\ref{sec:validation}).  A majority, but not all of them are normalized
+and vary between -1 and 1. None of these functions are symmetric, and most of
+them change sign according to the direction of the underlying effect.
+
+Observe that Ziggy computes univariate, but also bivariate components: in this
+case it compares columns by pairs. Our motivation is to check which
 correlations are present in one set and not in the other, or more generally
-which correlations are strengthened are weakened across the datasets. Finally, note that
-most effects are normalized to vary between -1 and 1, but not all of them (for
-instance, the difference of standard deviations can in theory be infinitely
-large). None of these functions are symmetric, and most of them change sign
-according to the direction of the underlying effect.
+which correlations are either strengthened or weakened across the datasets. In
+the discrete case, we substitute the correlation coefficient by Cram\'er' s V.
+This function also measures the associations between two variables, and it
+varies similarly between 0 and 1~\cite{cohen1977statistical}. Its value is
+$\sqrt{X/(N(\min(l,c) - 1))}$, where $X$ is Pearson's $\chi^2$ statistic and
+$(l,c)$ are the dimensions of the contingency table of $\bf{d}_t$ and
+$\bf{d}_{\nott}$.
 
 Once we computed the Zig-Components $\mf{z}_1, \ldots, \mf{z}_Z$, we obtain the
 Zig-Dissimilarity as follows. First, we compute the absolute values
@@ -320,17 +315,12 @@ of all the differences.
     zig-components, and $w_1, \ldots, w_Z$ a set of user-defined weights.  We
     define the Zig-Dissimilarity as follows: 
     \begin{equation}
-        \mf{D}_{Zig}(\rb{D_t}, \rb{D}_{\nott}) 
-        \equiv \sum_{k \in [1, Z]} w_k \cdot z_k(\rb{D_t}, \rb{D}_{\nott})
+        \mf{D}_{Zig}(\rb{V}_t, \rb{V}_{\nott}) 
+        \equiv \sum_{k \in [1, Z]} w_k \cdot z_k(\rb{V_t}, \rb{V}_{\nott})
     \end{equation}
 \end{definition}
 We insist that the Zig-Components must be normalized before the aggregation.
-In the general case, we cannot assume that the scores are commensurate. And
-even if they are, it is not always clear whether aggregating them makes sense.
-For instance, in Table~\ref{tab:dissim}, all the scores involving numerical
-variables are expressed as multiples of $\sigma_{\nott}$. Yet, they all
-describe a different property. We could not establish whether summing
-them directly would produce meaningful results.
+In the general case, we cannot assume that the scores are commensurate.
 
 The aim of the weights $w_k$ is to balance the effects across column types. For
 instance, we measure two components for the numerical columns, and only one for
@@ -359,12 +349,12 @@ and $\mf{S}_{soft}$.  These functions vary between 0 and 1, 0 indicating no
 correlation and 1 indicating maximal correlation. Both measures are a variant
 of the same principle, and we will refer to them collectively as
 $\mf{S}_{Zig}$.
-
-Let $\rb{D}$ and $\rb{D}'$ represent two views. The measure $\mf{S}_{hard}$
+Perfect Estimation with Imperfect Samples
+Let $\rb{V}$ and $\rb{V}'$ represent two views. The measure $\mf{S}_{hard}$
 describes a worst case scenario: we compute the dependency between every
-column of $\rb{D}$ and every column of  $\rb{D}'$ and report the highest value.
+column of $\rb{V}$ and every column of  $\rb{V}'$ and report the highest value.
 \begin{gather}
-    \mf{S}_{hard}(\rb{D}, \rb{D'}) = \max_{d \in \rb{D}, d' \in \rb{D'}}
+    \mf{S}_{hard}(\rb{V}, \rb{V}') = \max_{d \in \rb{V}, d' \in \rb{V}'}
     |\mf{s}(d, d')|, \text{where:}\\
          \mf{s}(d, d')= \begin{cases}
              r(d, d')\ \text{if $d, d'$ are continuous (correlation)}\\
@@ -376,9 +366,9 @@ column of $\rb{D}$ and every column of  $\rb{D}'$ and report the highest value.
 The measure  $\mf{S}_{soft}$ is the average of all the pairwise
 correlations:
 \begin{gather}
-    \mf{S}_{soft}(\rb{D}, \rb{D'}) = 
-    \frac{\sum_{d \in \rb{D}, d' \in \rb{D'}} |\mf{s}(d, d')|}
-        {M_\rb{D} \cdot M_{\rb{D}'}}
+    \mf{S}_{soft}(\rb{V}, \rb{V}') = 
+    \frac{\sum_{d \in \rb{V}, d' \in \rb{D}'} |\mf{s}(d, d')|}
+        {M_\rb{V} \cdot M_{\rb{V}'}}
 \end{gather}
 The functions $\mf{S}_{soft}$ and $\mf{S}_{hard}$ differ in how they treat
 overlap between the views: if one column is present in both $\mf{D}$ and
@@ -393,7 +383,6 @@ efficient: we get the pairwise correlations for free, because we need to
 compute them anyway to obtain the Zig-Dissimilarities. 
 
 
-
 \section{Algorithms To Detect Views}
 \label{sec:algorithm}
 
@@ -406,10 +395,9 @@ the former while constraining the latter.
 
 \begin{figure}
   \centering
-  \includegraphics[width=\columnwidth]{Figures/Greedy}
+  \includegraphics[width=0.8\columnwidth]{Figures/Greedy}
   \caption{Illustration of Ziggy's greedy view composition algorithm, with
-      $i=3$
-  and $D=3$. Each point represents a column. The grey edges represent the
+  $i=3$ and $D=3$. Each point represents a column. The grey edges represent the
   amount of redundancy added by each candidate. The blue edges represent the
   amount of dissimilarity added by each candidate.}
   \label{pic:greedy}
@@ -424,13 +412,13 @@ The first step is straightforwards, but it is also by far the most time
 consuming. We discuss in Section~\ref{sec:optimization} how to optimize it.
 During the second step Ziggy creates the views by adding columns one by one.
 Figure~\ref{pic:greedy} illustrates this approach. Suppose that Ziggy has
-already obtained two views, $\rb{D}^1$ and $\rb{D}^2$, and it is currently
-building a third one, $\rb{D}^3$. For each column in $\rb{D} \setminus \rb{D}^3
+already obtained two views, $\rb{V}^1$ and $\rb{V}^2$, and it is currently
+building a third one, $\rb{V}^3$. For each column in $\rb{V} \setminus \rb{V}^3
 $, our algorithm computes two scores: the gain of dissimilarity $\Delta\mf{D}$
-induced by adding the candidate to $\rb{D}^3$, and the gain of
+induced by adding the candidate to $\rb{V}^3$, and the gain of
 redundancy~$\Delta\mf{S}$ induced by the same. Ziggy excludes the columns which
-exceed the redundancy capacity, e.g., those for which $\mf{S}([\rb{D}^1,
-\rb{D}^2], \rb{D}^3) + \Delta\mf{S} > L$, where $L$ is the dependency limit
+exceed the redundancy capacity, e.g., those for which $\mf{S}([\rb{V}^1,
+\rb{V}^2], \rb{V}^3) + \Delta\mf{S} > L$, where $L$ is the dependency limit
 introduced in Equation~\ref{prob2}. It then detects the best node among those
 that remain (that is, that for which $\Delta\mf{D}$ is maximal) and adds it to
 the view. It repeats the process until either the maximal number of columns is
@@ -438,26 +426,25 @@ met, or there are no more eligible columns.
 
 In practice, care must be taken when computing $\Delta\mf{D}$, because one
 column is often involved in several Zig-Components. Suppose for instance that we
-are building a view $\rb{D}^{i}$, and we wish to compute $\Delta\mf{D}$ for
-a given candidate $d$.  In our
-implementation, if $d$ contains numeric values, then it will be associated with
+are building a view $\rb{V}^{i}$, and we wish to compute $\Delta\mf{D}$ for
+a given candidate $\bf{d}$.  In our
+implementation, if $\bf{d}$ contains numeric values, then it will be associated with
 at least two components: the difference between the means $\mf{z}_\mu$, and the
 difference between the standard deviations $\mf{z}_\sigma$.  Additionally, we must
 account for the difference between dependencies, for all the columns
-already included in $\rb{D}^{i}$. Thus, if $z$ describes the normalized absolute
-value of a Zig-Component $\mf{z}$, and if $\rb{D}^{i}_{num}$ and
-$\rb{D}^{i}_{cat}$ respectively represent the numerical and categorical
-variables of $\rb{D}^{i}$ the final score is:
+already included in $\rb{V}^{i}$. Thus, if $z$ describes the normalized absolute
+value of a Zig-Component $\mf{z}$, and if $\rb{V}^{i}_{num}$ and
+$\rb{V}^{i}_{cat}$ respectively represent the numerical and categorical
+variables of $\rb{V}^{i}$ the final score is:
 %\begin{equation}
     \begin{multline}
 \Delta\mf{D} = 
-z_\mu(d_t, d_{\nott}) +
-z_\sigma(d_t, d_{\nott}) +
-\sum_{d' \in \rb{D}^i_{num}} z_r([d_t, d_t'], [d_{\nott}, d_{\nott}']) \\
-+ \sum_{d' \in \rb{D}^i_{cat}} z_V([d_t, d_t'], [d_{\nott}, d_{\nott}'])
+z_\mu^{\bf{d}}+ z_\sigma^{\bf{d}} +
+\sum_{\rb{d}' \in \rb{V}^i_{num}} z_r^{\rb{d}, \rb{d}'}
++ \sum_{d' \in \rb{V}^i_{cat}} z_V^{\rb{d}, \rb{d}'}
 \end{multline}
 %\end{equation}
-The last two terms of the equation depends on the current state of $ \rb{D}^i$.
+The last two terms of the equation depends on the current state of $ \rb{V}^i$.
 Therefore we must update $\Delta\mf{D}$ after each step.
 
 
@@ -470,39 +457,44 @@ of the knapsack problem.}
 Finally, if we use the redundancy measure $\mf{S}_{hard}$, then we can avoid
 computing $ \Delta\mf{S}$ altogether: Ziggy can discard the redundant
 candidates before it starts building the view.  Consider a candidate column
-$d$, and let $\rb{D}^{1..i-1}$ describe the union of all previously encountered
-views. If $\mf{S}_{hard} (\rb{D}^{1..i-1}, d) > L$, then the column is not
-exploitable: adding it to the current view $\rb{D}^{i}$ will breach the
-threshold, regardless of $\rb{D}^{i}$'s current state.  Conversely, if we have
-$\mf{S}_{hard}(\rb{D}^{1..i-1}, d) < L$, then candidate is ``safe'', it will
+$d$, and let $\rb{V}^{1..i-1}$ describe the union of all previously encountered
+views. If $\mf{S}_{hard} (\rb{V}^{1..i-1}, d) > L$, then the column is not
+exploitable: adding it to the current view $\rb{V}^{i}$ will breach the
+threshold, regardless of $\rb{V}^{i}$'s current state.  Conversely, if we have
+$\mf{S}_{hard}(\rb{V}^{1..i-1}, d) < L$, then candidate is ``safe'', it will
 never cause the dependency threshold to be breached.  Thus Ziggy, builds the
 view in two separate steps: first it eliminates the redundant columns (i.e.,
-those for which $\mf{S}_{hard} (\rb{D}^{1..i-1}, d) > L$), then it selects the
+those for which $\mf{S}_{hard} (\rb{V}^{1..i-1}, d) > L$), then it selects the
 top $D$ candidates.  Unfortunately, this property does not hold for
 $\mf{S}_{soft}$: we must recompute the value $\Delta\mf{S}$ for each column
-after each update of~$\rb{D}^{i}$.
+after each update of~$\rb{V}^{i}$.
+
 \begin{table*}[t!]
     \centering
-    \begin{tabular}{c c c c p{9.5cm}}
+  \rowcolors{2}{gray!25}{white}
+    \begin{tabular}{c c c c p{8cm}}
+    \rowcolor{gray!50}
       \hline
       Property & Type 1 & Type 2 & Test Statistic & Comment\\
       \hline
-      Mean & Contin.  & - & $\frac{\mu_t - \mu_{\nott}}{\sigma}$ &
+      Mean & Contin.  & - & $(\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott})/s_{\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott}}$ &
         Wald test~\cite{wasserman2013all}  \\
-        Stand. Dev.& Contin.  & - & $\sigma_t / \sigma_{\nott}$ &
-        F-test~\cite{wasserman2013all} \\
+        Stand. Dev.& Contin.  & - & $s_t / s_{\nott}$ &
+        F-test~\cite{cohen1977statistical} \\
         Frequencies & Discrete & - & $\chi^2$ & Pearson's $\chi^2$
         test~\cite{wasserman2013all}\\
-      \hline
-      Dependence  & Contin. & Contin & $\frac{Z - Z'}{\sigma_{Z - Z'}}$ & $Z_1$
-      and $Z_2$ are the Fisher Z-transformations of the correlations $r$ and
-      $r'$~\cite{fisher1915frequency}  \\
-      Dependence  & Contin. & Both &  $\frac{V-V'}{\sigma_{V-V'}}$ & $V$ is
-      Cram\'er's V. To test it, we exploit Fisher's
+      Dependence  & Contin. & Contin & $(Z^{\bf{d}, \bf{d}'}_t - 
+      Z^{\bf{d}, \bf{d}'}_{\nott})/s_{Z_t - Z_{\nott}}$ & $Z^{\bf{d}, \bf{d}'}$ is Fisher
+      Z-transformation of the correlation coefficient $r$ between $\bf{d}$ and
+      $\bf{d}$~\cite{fisher1915frequency}  \\
+      Dependence  & Contin. & Both &  $(V^{\bf{d}, \bf{d}'}_t -
+      V^{\bf{d}, \bf{d}'}_t)/s_{V_t-V_{\nott}}$ & $V$ is
+      Cram\'er's V. We approximate its distribution with Fisher's
       Normal approximation of $\sqrt{\chi^2}$~\cite{patel1996handbook}.\\ 
       \hline
     \end{tabular}
-\caption{Our choice of tests, corresponding to each Zig-Component.}
+\caption{Our choice of tests, corresponding to each Zig-Component. We use the
+same notations as in Table~\ref{tab:dissim}.}
     \label{tab:tests}
 \end{table*}
 \begin{figure}[t!]
@@ -529,33 +521,34 @@ We now discuss how to compute the Zig-Components for each column of the
 database. This task is critical: in the best case, it requires a full scan of
 the database. In the worst case it runs in $\mathcal{O}(N \cdot M^2)$, because
 we need to compute to and compare every possible pair of correlations in
-$\rb{D}_t$ and $\rb{D}_{\nott}$ for the scores $\mf{z}_r$ and $\mf{z}_V$.
+$\rb{V}_t$ and $\rb{V}_{\nott}$ for the scores $\mf{z}_r$ and $\mf{z}_V$.
 
 Our idea is to prepare some computations offline, before the user starts
 submitting queries.  Let us focus on the Zig-Component $\mf{z}_\mu$, which
-reports the difference $\frac{\mu_{\nott} - \mu_{t}}{\sigma_t}$, for a given
-column $d$ of the database.  Figure~\ref{pic:withoutstag} presents the naive
-method to compute this component.  As soon as our user submits a selection, we
-compute the average $\mu_t$ for those tuples, the values $\mu_{\nott}$ and
-$\sigma_{\nott}$ for the rest of the database, and we apply the formula
-$\frac{\mu_{\nott} - \mu_{t}}{\sigma_t}$  directly. Thus, we scan the whole
-column.
+reports the difference $(\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott})/{s_{\nott}}$,
+for a given column $\bf{d}$ of the database.  Figure~\ref{pic:withoutstag}
+presents the naive method to compute this component.  As soon as our user
+submits a selection, we compute the average $\bar{\bf{d}}_t$ for those tuples,
+the values $\bar{\bf{d}}_{\nott}$ and $s_{\nott}$ for the rest of the database,
+and we apply the formula $(\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott})/{s_{\nott}}$
+directly. Thus, we read the whole column.
 
 Figure~\ref{pic:withstag} illustrates our staging strategy. Offline, we compute
-the mean $\mu$ and the standard deviation $\sigma$ for the whole column~$d$.
-Online, when the user submits a selection, we compute  $\mu_t$ and $\sigma_t$
+the mean $\bar{\bf{d}}$ and the standard deviation $s$ for the whole
+column~$\bf{d}$. Online, when the user submits a selection, we compute
+$\bar{\bf{d}}_t$ and $s_t$
 only - thus, we read the selection and ignore the rest of the database. We then
-reconstitute $\mu_{\nott}$ and $\sigma_{\nott}^2$, as follows:
+reconstitute $\bar{\bf{d}}_{\nott}$ and $s_{\nott}^2$, as follows:
 \begin{gather}
     N_{\nott} = N - N_t\\
-    \mu_{\nott}= \frac{ N \cdot \mu -  N_t \cdot \mu_t } { N - N_t } \\
-    \sigma_{\nott}^2 = \sigma^2 - \sigma_t^2 -
-    (\mu_t - \mu_{\nott})^2 \cdot \frac{N_t \cdot N_{\nott}}{N^2}
+    \bar{\bf{d}}_{\nott}= \frac{ N \cdot \bar{\bf{d}} -  N_t \cdot \bar{\bf{d}}_t } { N - N_t } \\
+    s_{\nott}^2 = s^2 - s_t^2 -
+    (\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott})^2 \cdot \frac{N_t \cdot N_{\nott}}{N^2}
 \end{gather}
 We now have all the elements to compute the Zig-Component. To obtain these
 equations, we used formulas designed to compute the mean and variance
 incrementally~\cite{pebay2008formulas}, and we reversed them - in fact we
-compute $\mu_{\nott}$ and $\sigma_{\nott}$ in a ``decremental'' fashion.
+compute $\bar{\bf{d}}_{\nott}$ and $s_{\nott}$ in a ``decremental'' fashion.
 
 In effect, this method does not reduce the complexity of the algorithm, but it
 greatly reduces the amount of tuples to read. The smaller the user's selection
@@ -563,18 +556,18 @@ is, the greater is the performance gain. Fortunately, we managed to extend it
 for all the Zig-Components presented in Table~\ref{tab:dissim}.  We can derive
 similar computations to update correlation
 coefficients~\cite{pebay2008formulas}. To cope with categorical data, our
-approach is slightly different. Offline, we compute a histogram for $d$. Online
-we compute another histogram for $d_t$. From those, we can infer the
-distribution of $d_{\nott}$'s values, and compute $\mf{z}_\chi$ and $\mf{z}_V$.
+approach is slightly different. Offline, we compute a histogram for $\bf{d}$.
+Online we compute another histogram for $\bf{d}_t$. From those, we can infer
+the distribution of $\bf{d}_{\nott}$'s values, and compute $\mf{z}_\chi$ and
+$\mf{z}_V$.
 
 \section{Model Validation}
 \label{sec:validation}
 
-
 We now focus on the following problem: for a given view $\rb{D^i}$, how
-\emph{significant} is the Zig-Dissimilarity $D = \mf{D}( \rb{D}^i_t  ;
-\rb{D}^i_{\overline{t}})$? A high value may indicate that $\rb{D}^i_t$ and
-$\rb{D}^i_{\overline{t}}$ come from two different distributions.  But it could
+\emph{significant} is the Zig-Dissimilarity $D = \mf{D}( \rb{V}^i_t  ;
+\rb{V}^i_{\overline{t}})$? A high value may indicate that $\rb{V}^i_t$ and
+$\rb{V}^i_{\overline{t}}$ come from two different distributions.  But it could
 also be caused by chance. How confident are we of this result? Answering this
 question has two practical uses. First, a confidence score can help us decide
 when to stop generating views. Second, it helps users interpret Ziggy's results.
@@ -583,7 +576,7 @@ The statistics literature proposes a completely ge\-ne\-ric way to solve
 this problem: permutation testing. This methods works with the Zig-Dependency,
 but it can also handle other divergence measures. The main idea is to
 repeatedly shuffle the rows of $D^i$, without modifying $\rb{t}$. Thus, the
-tuples are randomly affected to $\rb{D}^i_t$ and $\rb{D}^i_{\overline{t}}$. We
+tuples are randomly affected to $\rb{V}^i_t$ and $\rb{V}^i_{\overline{t}}$. We
 then observe how the dissimilarity varies: if the permutations have no
 effect on $D$, then there is high chance that the dissimilarity was caused by
 chance.  Oppositely, if $D$ is very sensitive,
@@ -868,30 +861,35 @@ investigations.
 
 
 
-\textbf{Metrics.} We now present our experimental results. We want to evaluate three aspects of
-our system: the \emph{quality} the views, their \emph{diversity}, and Ziggy's
-\emph{runtime}. To evaluate the quality of the views, we simulate users with
-statistical classifiers. We assume that if a classifier can learn from a view,
-then so can a real user. Technically, we train a classifier, using the view
-$\bf{D}^i$ as feature set and the user's selection $\bf{t}$ as target. We then
-check if the classifier can accurately reconstruct $\bf{t}$ from $\bf{D}^i$. If
-so, we deduce that the selection has a recognizable structure in the subspace.
-Therefore, the view contains exploitable information. Oppositely, if the
-classifier cannot reconstruct the user's selection, then either the classifier
-is poor, or the view contains no information about the selection. We use a
-5-Nearest Neighbor (5-NN) classifier, and we report the F1 measure with 5
-cross-validation (higher is better). We chose the nearest neighbor algorithm
-because it is fast, and it gave us good predictive performance. The last two
-aspects are easier to quantify. To measure diversity, we report the number of
-distinct columns used the set of views (higher is better). We measure runtime
-with the total wall clock time - including preprocessing in Ziggy's case (lower is better).
+\textbf{Metrics.} We now present our experimental results. We want to evaluate
+three aspects of our system: the \emph{quality} the views, their
+\emph{diversity}, and Ziggy's \emph{runtime}. To evaluate the quality of the
+views, we simulate users with statistical classifiers. We assume that if a
+classifier can learn from a view, then so can a real user. Technically, we
+materialize the user's selection into a vector $\rb{t} = (t_1, \ldots,
+t_n)^\top$: $t_i=1$ if the tuple is chosen, 0 otherwise.  We then train a
+classifier, using the view $\bf{D}^i$ as feature set and the user's selection
+$\bf{t}$ as target. We then check if the classifier can accurately reconstruct
+$\bf{t}$ from $\bf{D}^i$. If so, we deduce that the selection has a
+recognizable structure in the subspace.  Therefore, the view contains
+exploitable information. Oppositely, if the classifier cannot reconstruct the
+user's selection, then either the classifier is poor, or the view contains no
+information about the selection. We use a 5-Nearest Neighbor (5-NN) classifier,
+and we report the F1 measure with 5 cross-validation (higher is better). We
+chose the nearest neighbor algorithm for convenience: it is fast, and it gave
+us good predictive performance. The
+last two aspects are easier to quantify. To measure diversity, we report the
+number of distinct columns used the set of views (higher is better). We measure
+runtime with the total wall clock time - including preprocessing in Ziggy's
+case (lower is better).
 
-\textbf{Baselines.} We compare Ziggy to four state-of-the-art subspace detection methods from the
-data mining literature. Our first three methods are supervised: their aim is to
-detect informative sets of columns, in order to predict a special, target
-column. We adapt these methods to our problem by setting $\bf{t}$ as the target
-column. Here again, our rationale is the following: if a set of column is a good
-predictor for the user's selection, then it contains useful information.
+\textbf{Baselines.} We compare Ziggy to four state-of-the-art subspace
+detection methods from the data mining literature. Our first three methods are
+supervised: their aim is to detect informative sets of columns, in order to
+predict a special, target column. We adapt these methods to our problem by
+setting $\bf{t}$ as the target column. Here again, our rationale is the
+following: if a set of column is a good predictor for the user's selection,
+then it contains useful information.
 
 Our first baseline is \texttt{Claude}, a recently published feature search
 algorithm. We chose this method because it uses a multi-view approach, and
@@ -904,14 +902,14 @@ builds subspaces with a level-wise, beam search algorithm. We used the authors'
 implementation.  We expect this approach to be both fast and accurate.
 
 Our second baseline is \texttt{Clique}, inspired by the pattern mining
-literature~\cite{xie2010max}. The idea is to build a graph inside which
-the weight of each edge $(i,j)$ represents the statistical dependency between
-the pair of columns $i,j$ and the target variable (again, we measure dependency with
-the mutual information) . To obtain $K$ subspaces with at most $N$ variables,
-we remove all the edges except the $K' > K$ strongest, and detect cliques of at
-most $N$ nodes in the remaining graph. By default, we set $K' = 2\cdot K$. To detect
-cliques, we used the \texttt{igraph} software package . We expect this
-algorithm to be fast but rather approximative.
+literature~\cite{xie2010max}. The idea is to build a graph inside which the
+weight of each edge $(i,j)$ represents the statistical dependency between the
+pair of columns $i,j$ and the target variable (again, we measure dependency
+with the mutual information) . To obtain $K$ subspaces with at most $N$
+variables, we remove all the edges except the $K' > K$ strongest, and detect
+cliques of at most $N$ nodes in the remaining graph. By default, we set $K' =
+2\cdot K$. To detect cliques, we used the \texttt{igraph} software package . We
+expect this algorithm to be fast but rather approximative.
 
 Our third baseline, \texttt{Wrap-5NN} is a ``wrapper'' from the feature
 selection literature~\cite{guyon2003introduction}. This algorithm trains 5-NN
@@ -1156,9 +1154,9 @@ dramatic as the size of the datasets increase.
 
 {\color{red} TO DO}
 
-\textbf{Feature Selection.} Feature selection seeks columns of $\rb{D}$ from
+\textbf{Feature Selection.} Feature selection seeks columns of $\rb{V}$ from
 which we can predict $\rb{t}$. Ultimately, the goal is to estimate
-$p(t|\rb{x})$. Our problem is symmetric: we seek columns of $\rb{D}$ which are
+$p(t|\rb{x})$. Our problem is symmetric: we seek columns of $\rb{V}$ which are
 influenced by $\rb{t}$. Hence, we focus on $p(\rb{x}|t)$. According to Bayes'
 theorem, these two problems are equivalent. And indeed, some feature selection
 methods, such as LDA, are also based on $p(\rb{x}|t)$. But the differences do
