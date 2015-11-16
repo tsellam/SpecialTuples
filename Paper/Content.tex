@@ -342,45 +342,51 @@ practical effect on the accuracy of our model.
 
 \subsection{Dependency Measure}
 \label{sec:dependency}
+\begin{figure}
+  \centering
+  \includegraphics[width=0.6\columnwidth]{Figures/Redundancy}
+  \caption{Illustration of Ziggy's redundancy measure. Vertices represent
+  column, edges represent pairwise dependency.}
+  \label{pic:redundanct}
+\end{figure}
+We now present two instantiations for the measure of redundancy,
+$\mf{S}_{hard}$ and $\mf{S}_{soft}$.  Both measures are a variant of the same
+principle, and we will refer to them collectively as the Zig-Dissimilarity
+$\mf{S}_{Zig}$. Here again, the main idea is to aggregate several simple
+interpretable indicators, such as those that users can find in statistics
+textbooks.
 
-In the previous section, we introduced a measure of dissimilarity $\mf{D}$. We
-now present two instantiations for the measure of redundancy, $\mf{S}_{hard}$
-and $\mf{S}_{soft}$.  These functions vary between 0 and 1, 0 indicating no
-correlation and 1 indicating maximal correlation. Both measures are a variant
-of the same principle, and we will refer to them collectively as
-$\mf{S}_{Zig}$.
-Perfect Estimation with Imperfect Samples
-Let $\rb{V}$ and $\rb{V}'$ represent two views. The measure $\mf{S}_{hard}$
-describes a worst case scenario: we compute the dependency between every
-column of $\rb{V}$ and every column of  $\rb{V}'$ and report the highest value.
-\begin{gather}
-    \mf{S}_{hard}(\rb{V}, \rb{V}') = \max_{d \in \rb{V}, d' \in \rb{V}'}
-    |\mf{s}(d, d')|, \text{where:}\\
-         \mf{s}(d, d')= \begin{cases}
-             r(d, d')\ \text{if $d, d'$ are continuous (correlation)}\\
-             V(d, d')\ \text{otherwise (Cram\'er's V)}
+Let  $\rb{V}$ and $\rb{V}'$ represent two views. We compute the Zig-Dependency
+in two steps. First, we compute the pairwise dependency $\mf{s}(\rb{d},
+\rb{d}')$ between every column $\rb{d}$ of  $\rb{V}$ and every column $\rb{d}'$
+of $\rb{V}'$, as shown in Figure~\ref{pic:redundanct}. The measure $\mf{s}$ is
+a convenience function, which allows us to combine different types of
+variables:
+\begin{equation}
+    \mf{s}(\rb{d}, \rb{d}')= \begin{cases}
+        r(\rb{d}, \rb{d}')\ \text{if $\bf{d}, \bf{d}'$ are continuous (correlation)}\\
+        V(\rb{d}, \rb{d}')\ \text{otherwise (Cram\'er's V)}
          \end{cases}
-\end{gather}
-{\color{red} Yes, I mix apple and oranges. Is this shocking?}
-
-The measure  $\mf{S}_{soft}$ is the average of all the pairwise
-correlations:
+\end{equation}
+During the second step, we aggregate these dependencies. The function
+$\mf{S}_{hard}$ utilizes the maximum, while $\mf{S}_{soft}$ uses the mean:
 \begin{gather}
+    \mf{S}_{hard}(\rb{V}, \rb{V}') = \max_{d \in \rb{V}, d' \in \rb{V}'} |\mf{s}(d, d')|\\
     \mf{S}_{soft}(\rb{V}, \rb{V}') = 
-    \frac{\sum_{d \in \rb{V}, d' \in \rb{D}'} |\mf{s}(d, d')|}
-        {M_\rb{V} \cdot M_{\rb{V}'}}
+    \frac{\sum_{d \in \rb{V}, d' \in \rb{V}'} |\mf{s}(d, d')|}
+    {V \cdot V'}
 \end{gather}
-The functions $\mf{S}_{soft}$ and $\mf{S}_{hard}$ differ in how they treat
-overlap between the views: if one column is present in both $\mf{D}$ and
-$\mf{D}'$, then $\mf{S}_{hard}$ is at its maximal value 1. This is not
-necessarily the case for $\mf{S}_{soft}$. Thus $\mf{S}_{hard}$ leads to less
-redundancy, while $\mf{S}_{soft}$ is more flexible (we will demonstrate this
-effect in our Experiments section).
+Both functions $\mf{S}_{soft}$ and $\mf{S}_{hard}$ vary between 0 and 1, 0
+indicating no dependency. The crucial difference lies in how they treat
+overlap. If one column is present in both $\rb{D}$ and $\rb{D}'$, then
+$\mf{S}_{hard}$ is at its maximal value 1. This is not necessarily the case for
+$\mf{S}_{soft}$. Thus $\mf{S}_{hard}$ leads to less redundancy, while
+$\mf{S}_{soft}$ is more flexible. We will demonstrate these effect in our
+Experiments section.
 
-We chose these measures for two reasons. First, they are easily interpretable,
-because they rely on textbook statistics.  Second, they are computationally
-efficient: we get the pairwise correlations for free, because we need to
-compute them anyway to obtain the Zig-Dissimilarities. 
+Finally, observe that our choice for $\mf{S}$ is computationally efficient: we
+get the pairwise correlations for free, because we need to compute them anyway
+to obtain the Zig-Dis\-si\-mi\-la\-ri\-ties. 
 
 
 \section{Algorithms To Detect Views}
@@ -397,7 +403,7 @@ the former while constraining the latter.
   \centering
   \includegraphics[width=0.8\columnwidth]{Figures/Greedy}
   \caption{Illustration of Ziggy's greedy view composition algorithm, with
-  $i=3$ and $D=3$. Each point represents a column. The grey edges represent the
+  $i=3$ and $D=3$. The grey edges represent the
   amount of redundancy added by each candidate. The blue edges represent the
   amount of dissimilarity added by each candidate.}
   \label{pic:greedy}
@@ -1135,7 +1141,7 @@ dramatic as the size of the datasets increase.
     \small
     \begin{tabular}{r c c c c} 
         \hline
-        Dataset & Columns & Rows & \#Views & \#Variables\\
+        Dataset & Columns & Rows & \#Views & Dim Views\\
         \hline
         MuskMolecules & 167 & 6,600 & 22 & 18\\
         Crime & 128 & 1,996 & 20 & 17\\
