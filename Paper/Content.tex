@@ -152,7 +152,7 @@ We can already propose a first, naive, formulation of our problem:
 \begin{problem}
     Consider a distribution dissimilarity function $\mf{D}$ and two integers
     $K$ and $D$. Find the top $K$ distinct views $\rb{V}^i$ with at most $D$
-    dimensions which maximize: $ \mf{D}\big( \rb{V}^i_t ;
+    dimensions which maximize $ \mf{D}\big( \rb{V}^i_t ;
     \rb{V}^i_{\overline{t}} \big)$ (ignoring column permutations).
 \end{problem}
 
@@ -283,7 +283,7 @@ For the sake of presentation, we  abbreviate $\mf{z}(\rb{V}_t, \rb{V}_{\nott})$
 as~$\mf{z}$.
 
 In our implementation, we combined five types of Zig-Com\-po\-nents, summarized
-in Table~\ref{tab:dissim}.  Most of them come from the statistics literature,
+in Table~\ref{tab:dissim}.  A few of them come from the statistics literature,
 where they are referred to as \emph{effect sizes}~\cite{cohen1977statistical,
 hedges2014statistical}.  We chose these indicators because they have intuitive
 interpretations, as well as known asymptotic properties (we will use those
@@ -365,24 +365,27 @@ variables:
 \begin{equation}
     \mf{s}(\rb{d}, \rb{d}')= \begin{cases}
         r(\rb{d}, \rb{d}')\ \text{if $\bf{d}, \bf{d}'$ are continuous (correlation)}\\
-        V(\rb{d}, \rb{d}')\ \text{otherwise (Cram\'er's V)}
+        V(\rb{d}, \rb{d}')\ \text{otherwise (Cram\'er's V, cf.
+        Sec.~\ref{sec:explain})}
          \end{cases}
 \end{equation}
 During the second step, we aggregate these dependencies. The function
 $\mf{S}_{hard}$ utilizes the maximum, while $\mf{S}_{soft}$ uses the mean:
 \begin{gather}
-    \mf{S}_{hard}(\rb{V}, \rb{V}') = \max_{d \in \rb{V}, d' \in \rb{V}'} |\mf{s}(d, d')|\\
+    \mf{S}_{hard}(\rb{V}, \rb{V}') = \max_{d \in \rb{V}, d' \in \rb{V}'} |\mf{s}(d, d')|
+    \label{eq:hard}\\
     \mf{S}_{soft}(\rb{V}, \rb{V}') = 
     \frac{\sum_{d \in \rb{V}, d' \in \rb{V}'} |\mf{s}(d, d')|}
     {V \cdot V'}
+    \label{eq:soft}
 \end{gather}
 Both functions $\mf{S}_{soft}$ and $\mf{S}_{hard}$ vary between 0 and 1, 0
 indicating no dependency. The crucial difference lies in how they treat
-overlap. If one column is present in both $\rb{D}$ and $\rb{D}'$, then
-$\mf{S}_{hard}$ is at its maximal value 1. This is not necessarily the case for
-$\mf{S}_{soft}$. Thus $\mf{S}_{hard}$ leads to less redundancy, while
-$\mf{S}_{soft}$ is more flexible. We will demonstrate these effect in our
-Experiments section.
+overlap. If one column is present in both $\rb{V}$ and $\rb{V}'$, then
+$\mf{S}_{hard}$ is at its maximal value 1, regardless of the other columns in
+the views. It is not necessarily so for $\mf{S}_{soft}$. Thus
+$\mf{S}_{hard}$ leads to less redundancy, while $\mf{S}_{soft}$ is more
+flexible. We will demonstrate these effect in our Experiments section.
 
 Finally, observe that our choice for $\mf{S}$ is computationally efficient: we
 get the pairwise correlations for free, because we need to compute them anyway
@@ -394,7 +397,7 @@ to obtain the Zig-Dis\-si\-mi\-la\-ri\-ties.
 
 We introduced a mass dissimilarity measure $\mf{D}_{Zig}$ and a view dependency
 measure $\mf{S}_{Zig}$ (with its two variants). We now discuss how to maximize
-the former while constraining the latter.
+the former while constraining the latter, as exposed in Equation~\ref{prob2}.
 
 \subsection{Overview}
 \label{sec:overview}
@@ -408,40 +411,45 @@ the former while constraining the latter.
   amount of dissimilarity added by each candidate.}
   \label{pic:greedy}
 \end{figure}
-Ziggy operates in two steps. First, it computes the individual Zig-Components
-for all the columns in the database. Then, it composes the views in a  greedy
-manner. For each view, Ziggy detects which columns are eligible (i.e., do not
-violate the redundancy constraint) and it adds those associated with the highest
-Zig-Components.
+
+Once the user has provided a selection of tuples, Ziggy performs two steps.
+First, it computes the Zig-Components, for each column and each pair of columns
+in the database. Then, it composes the views greedily: it picks the
+co\-lumns associated with the highest components one by one, while ensuring
+that the dependency threshold $L$ is not breached.
 
 The first step is straightforwards, but it is also by far the most time
 consuming. We discuss in Section~\ref{sec:optimization} how to optimize it.
-During the second step Ziggy creates the views by adding columns one by one.
-Figure~\ref{pic:greedy} illustrates this approach. Suppose that Ziggy has
-already obtained two views, $\rb{V}^1$ and $\rb{V}^2$, and it is currently
-building a third one, $\rb{V}^3$. For each column in $\rb{V} \setminus \rb{V}^3
-$, our algorithm computes two scores: the gain of dissimilarity $\Delta\mf{D}$
-induced by adding the candidate to $\rb{V}^3$, and the gain of
-redundancy~$\Delta\mf{S}$ induced by the same. Ziggy excludes the columns which
-exceed the redundancy capacity, e.g., those for which $\mf{S}([\rb{V}^1,
-\rb{V}^2], \rb{V}^3) + \Delta\mf{S} > L$, where $L$ is the dependency limit
-introduced in Equation~\ref{prob2}. It then detects the best node among those
-that remain (that is, that for which $\Delta\mf{D}$ is maximal) and adds it to
-the view. It repeats the process until either the maximal number of columns is
-met, or there are no more eligible columns.
+During the second step Ziggy creates the views by adding columns in a
+best-first fashion.  Figure~\ref{pic:greedy} illustrates this approach. Suppose
+that Ziggy has previously obtained two views, $\rb{V}^1$ and $\rb{V}^2$, and it
+is currently building a third one, $\rb{V}^3$. For each column in $\rb{V}
+\setminus \rb{V}^3 $, our algorithm computes two scores: the gain of
+dissimilarity $\Delta\mf{D}$ induced by adding the candidate to $\rb{V}^3$, and
+the gain of redundancy~$\Delta\mf{S}$ induced by the same. Ziggy excludes the
+columns which exceed the redundancy capacity, e.g., those for which
+$\mf{S}([\rb{V}^1, \rb{V}^2], \rb{V}^3) + \Delta\mf{S} > L$. It then detects
+the best candidate among those that remain and adds it to the view. It repeats the
+process until either the maximal number of columns $D$ is met, or there are no
+more eligible columns. We present the pseudo-code in
+Algorithm~\ref{algo:view_search}. Note that initializing the views is not
+trivial: first Ziggy inserts a pair of columns, then it adds the candidates 
+one at a time.
 
-In practice, care must be taken when computing $\Delta\mf{D}$, because one
-column is often involved in several Zig-Components. Suppose for instance that we
-are building a view $\rb{V}^{i}$, and we wish to compute $\Delta\mf{D}$ for
-a given candidate $\bf{d}$.  In our
-implementation, if $\bf{d}$ contains numeric values, then it will be associated with
-at least two components: the difference between the means $\mf{z}_\mu$, and the
-difference between the standard deviations $\mf{z}_\sigma$.  Additionally, we must
-account for the difference between dependencies, for all the columns
-already included in $\rb{V}^{i}$. Thus, if $z$ describes the normalized absolute
-value of a Zig-Component $\mf{z}$, and if $\rb{V}^{i}_{num}$ and
-$\rb{V}^{i}_{cat}$ respectively represent the numerical and categorical
-variables of $\rb{V}^{i}$ the final score is:
+To compute $\Delta\mf{S}$, we apply Equations~\ref{eq:hard} and~\ref{eq:soft}
+directly. Computing $\Delta\mf{D}$ requires more care, because each column is
+involved in several Zig-Com\-po\-nents, and the bivariate components
+depend on the current state of the algorithm.  Suppose for instance that we are
+building a view $\rb{V}^{i}$, and we wish to compute $\Delta\mf{D}$ for a given
+candidate $\bf{d}$.  In our implementation, if $\bf{d}$ contains numeric
+values, then it is associated with at least two components: the difference
+between the means $\mf{z}_\mu$, and the difference between the standard
+deviations $\mf{z}_\sigma$. We obtain those from the first step of the
+algorithm.  But we must also account for the difference between dependencies,
+for all the columns already included in $\rb{V}^{i}$. Thus, if $z$ describes
+the normalized absolute value of a Zig-Component $\mf{z}$, and if
+$\rb{V}^{i}_{num}$ and $\rb{V}^{i}_{cat}$ respectively represent the numerical
+and categorical variables of $\rb{V}^{i}$ the final score is:
 %\begin{equation}
     \begin{multline}
 \Delta\mf{D} = 
@@ -453,27 +461,54 @@ z_\mu^{\bf{d}}+ z_\sigma^{\bf{d}} +
 The last two terms of the equation depends on the current state of $ \rb{V}^i$.
 Therefore we must update $\Delta\mf{D}$ after each step.
 
-
-The choice of dependency measure $\mf{S}_{hard}$ or  $\mf{S}_{soft}$ influences
-the correctness of our algorithm. With $\mf{S}_{hard}$, Ziggy will return an
-optimal solution. This is not the case with $\mf{S}_{hard}$.  {\color{red} I
-    will write a little proof here. - Basically, we are dealing with a variant
-of the knapsack problem.}
-
-Finally, if we use the redundancy measure $\mf{S}_{hard}$, then we can avoid
-computing $ \Delta\mf{S}$ altogether: Ziggy can discard the redundant
-candidates before it starts building the view.  Consider a candidate column
-$d$, and let $\rb{V}^{1..i-1}$ describe the union of all previously encountered
-views. If $\mf{S}_{hard} (\rb{V}^{1..i-1}, d) > L$, then the column is not
-exploitable: adding it to the current view $\rb{V}^{i}$ will breach the
-threshold, regardless of $\rb{V}^{i}$'s current state.  Conversely, if we have
+If we use the redundancy measure $\mf{S}_{hard}$, then we can avoid computing $
+\Delta\mf{S}$ altogether: Ziggy can discard the redundant candidates before it
+starts building the view.  Consider a candidate column $d$, and let
+$\rb{V}^{1..i-1}$ describe the union of all previously built views. If
+$\mf{S}_{hard} (\rb{V}^{1..i-1}, d) > L$, then the column is not exploitable:
+adding it to the current view $\rb{V}^{i}$ will breach the threshold,
+regardless of $\rb{V}^{i}$'s current state.  Conversely, if we have
 $\mf{S}_{hard}(\rb{V}^{1..i-1}, d) < L$, then candidate is ``safe'', it will
-never cause the dependency threshold to be breached.  Thus Ziggy, builds the
+never breach the dependency threshold.  Thus Ziggy, builds the
 view in two separate steps: first it eliminates the redundant columns (i.e.,
 those for which $\mf{S}_{hard} (\rb{V}^{1..i-1}, d) > L$), then it selects the
-top $D$ candidates.  Unfortunately, this property does not hold for
-$\mf{S}_{soft}$: we must recompute the value $\Delta\mf{S}$ for each column
-after each update of~$\rb{V}^{i}$.
+top $D$ candidates. 
+
+Finally, observe that our greedy algorithm is not exact, but it runs
+in~$\mathcal{O}(KMD)$. Thanks to this heuristic, we avoid an exhaustive search
+of $\binom{M}{D}$ possible possible view combinations, which would lead to an
+unpractical $\mathcal{O}(KM^D)$ runtime.
+
+\begin{algorithm}[t]
+\caption{View Construction}
+\label{algo:view_search}
+\begin{algorithmic}
+    \Function{DetectViews}{$K$, $D$, $L$}
+    \For{$k \in [1,K]$}
+
+        \State $\text{Cand} \gets \{\rb{x}^1, \ldots, \rb{x}^M\}$
+        \State $\text{Red.Gains} \gets 
+            \{\Delta\mf{S}(\rb{d}, \rb{V}^{1..k}), \text{~for~} \rb{d} \in \text{Cand}\}$
+         \State $\text{Cand} \gets 
+            \{\rb{d} \text{~where~not~Red.Gains}(\rb{d}) > L \}$
+        \State $\text{Dis.Gains} \gets 
+        \{\Delta\mf{D}(\rb{d}, \rb{d}'), \text{~for~} \rb{d},\rb{d}' \in \text{Cand}\}$
+        \State $\rb{V}^k \gets \rb{V}^k \cup \{\text{argmax}_{\bf{d}, \bf{d}'}\ \text{Dis.Gains}\}$
+        \For {$d \in [3, D]$}
+            \State $\text{Cand} \gets \{\rb{x}^1, \ldots, \rb{x}^M\}
+                \setminus \rb{V}^k$
+            \State $\text{Red.Gains} \gets 
+                \{\Delta\mf{S}(\rb{d}, \rb{V}^{1..k}), \text{~for~} \rb{d} \in \text{Cand}\}$
+             \State $\text{Cand} \gets 
+                \{\rb{d} \text{~where~not~Red.Gains}(\rb{d}) > L \}$
+            \State $\text{Dis.Gains} \gets 
+                \{\Delta\mf{D}(\rb{d}, \rb{V}^{k}), \text{~for~} \rb{d} \in \text{Cand}\}$
+            \State $\rb{V}^k \gets \rb{V}^k \cup \{\text{argmax}_{\bf{d}}\ \text{Dis.Gains}\}$
+        \EndFor
+    \EndFor
+    \EndFunction
+\end{algorithmic}
+\end{algorithm}
 
 \begin{table*}[t!]
     \centering
@@ -489,13 +524,12 @@ after each update of~$\rb{V}^{i}$.
         F-test~\cite{cohen1977statistical} \\
         Frequencies & Discrete & - & $\chi^2$ & Pearson's $\chi^2$
         test~\cite{wasserman2013all}\\
-      Dependence  & Contin. & Contin & $(Z^{\bf{d}, \bf{d}'}_t - 
-      Z^{\bf{d}, \bf{d}'}_{\nott})/s_{Z_t - Z_{\nott}}$ & $Z^{\bf{d}, \bf{d}'}$ is Fisher
+      Dependence  & Contin. & Contin & $(Z_t - 
+      Z_{\nott})/s_{Z_t - Z_{\nott}}$ & $Z$ is the Fisher
       Z-transformation of the correlation coefficient $r$ between $\bf{d}$ and
-      $\bf{d}'$~\cite{fisher1915frequency}  \\
-      Dependence  & Contin. & Both &  $(V^{\bf{d}, \bf{d}'}_t -
-      V^{\bf{d}, \bf{d}'}_t)/s_{V_t-V_{\nott}}$ & $V$ is
-      Cram\'er's V. We approximate its distribution with Fisher's
+      $\bf{d}'$~\cite{fisher1915frequency}\\
+      Dependence  & Contin. & Both &  $(V_t - V_{\nott})/s_{V_t-V_{\nott}}$ & $V$ is
+      Cram\'er's V between $\bf{d}$ and $\bf{d}'$. We obtain its distribution with Fisher's
       Normal approximation of $\sqrt{\chi^2}$~\cite{patel1996handbook}.\\ 
       \hline
     \end{tabular}
@@ -522,11 +556,10 @@ same notations as in Table~\ref{tab:dissim}.}
 
 \subsection{Staging Computations}
 \label{sec:optimization}
-
 We now discuss how to compute the Zig-Components for each column of the
 database. This task is critical: in the best case, it requires a full scan of
-the database. In the worst case it runs in $\mathcal{O}(N \cdot M^2)$, because
-we need to compute to and compare every possible pair of correlations in
+the database. In the worst case it runs in $\mathcal{O}(NM^2)$, because
+we need to compute and compare every possible pair of correlations in
 $\rb{V}_t$ and $\rb{V}_{\nott}$ for the scores $\mf{z}_r$ and $\mf{z}_V$.
 
 Our idea is to prepare some computations offline, before the user starts
@@ -569,7 +602,6 @@ $\mf{z}_V$.
 
 \section{Model Validation}
 \label{sec:validation}
-
 We now focus on the following problem: for a given view $\rb{D^i}$, how
 \emph{significant} is the Zig-Dissimilarity $D = \mf{D}( \rb{V}^i_t  ;
 \rb{V}^i_{\overline{t}})$? A high value may indicate that $\rb{V}^i_t$ and
@@ -616,19 +648,16 @@ method~\cite{wasserman2013all}.
 \end{figure}
 \begin{table}[t!]
     \centering
-    \begin{tabular}{| p{4.2cm} | c | c |}
+    \begin{tabular}{| p{4cm} | c | c |}
       \hline
       Description & Exceptional? & Weak?\\
       \hline
-      $\mf{z_\mu} \geq 0$ and $\mu_{\nott} \geq 0$: ``increase'' &
-          \multirow{4}{*}{$z_\mu$ in top 5\%} & 
-            \multirow{2}{*}{$|\mf{z_\mu}| < 0.2$}\\
-      $\mf{z_\mu} \geq 0$ and $\mu_{\nott} < 0$: ``decrease'' &
-      &\\
-      $\mf{z_\mu} < 0$ and $\mu_{\nott} \geq0$: ``increase'' &
-       &\multirow{2}{*}{$p_\mu < 0.01$}\\
-      $\mf{z_\mu} < 0$ and $\mu_{\nott} < 0$: ``decrease'' &
-      &\\
+      $\mf{z_\mu} \geq 0 \wedge \bar{\rb{d}}_{\nott} \geq 0$: ``increase'' &
+          \multirow{4}{1.2cm}{$z_\mu^{\bf{d}}$ in top 5\%} & 
+              \multirow{4}{1.5cm}{$|\mf{z_\mu^{\bf{d}}}| < 0.2$ or $p_\mu^{\bf{d}} < 0.01$}\\
+      $\mf{z_\mu} \geq 0 \wedge \bar{\rb{d}}_{\nott} < 0$: ``decrease'' & &\\
+      $\mf{z_\mu} < 0 \wedge \bar{\rb{d}}_{\nott} \geq0$: ``decrease'' & &\\
+      $\mf{z_\mu} < 0 \wedge \bar{\rb{d}}_{\nott} < 0$: ``increase'' & &\\
       \hline
     \end{tabular}
     \caption{Example of handwritten rules for the difference of means
