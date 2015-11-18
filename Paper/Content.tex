@@ -586,8 +586,8 @@ reconstitute $\bar{\bf{d}}_{\nott}$ and $s_{\nott}^2$, as follows:
 \begin{gather}
     N_{\nott} = N - N_t\\
     \bar{\bf{d}}_{\nott}= \frac{ N \cdot \bar{\bf{d}} -  N_t \cdot \bar{\bf{d}}_t } { N - N_t } \\
-    s_{\nott}^2 = s^2 - s_t^2 -
-    (\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott})^2 \cdot \frac{N_t \cdot N_{\nott}}{N^2}
+    s_{\nott}^2 = \frac{N}{N_{\nott}} \cdot s^2 - \frac{N_t}{N_{\nott}} \cdot s_t^2 -
+    \frac{N_t}{N} \cdot (\bar{\bf{d}}_t -  \bar{\bf{d}}_{\nott})^2 
 \end{gather}
 We now have all the elements to compute the Zig-Component. To obtain these
 equations, we used formulas designed to compute the mean and variance
@@ -599,11 +599,16 @@ greatly reduces the amount of tuples to read. The smaller the user's selection
 is, the greater is the performance gain. Fortunately, we managed to extend it
 for all the Zig-Components presented in Table~\ref{tab:dissim}.  We can derive
 similar computations to update correlation
-coefficients~\cite{pebay2008formulas}. To cope with categorical data, our
-approach is slightly different. Offline, we compute a histogram for $\bf{d}$.
-Online we compute another histogram for $\bf{d}_t$. From those, we can infer
-the distribution of $\bf{d}_{\nott}$'s values, and compute $\mf{z}_\chi$ and
-$\mf{z}_V$.
+coefficients. If $q$ represents the covariance between $\bf{d}$ and $\bf{d}'$:
+\begin{equation}
+    q_{\nott} = \frac{N}{N_{\nott}} \cdot q - \frac{N_t}{N_{\nott}} \cdot q_t -
+        \frac{N_t}{N} \cdot (\bar{\bf{d}}_t -  \bar{\bf{d}}_{\nott}) \cdot
+                             (\bar{\bf{d}}'_t -  \bar{\bf{d}}'_{\nott}) 
+\end{equation}
+To cope with categorical data, our approach is slightly different. Offline, we
+compute a histogram for $\bf{d}$.  Online we compute another histogram for
+$\bf{d}_t$. From those, we can infer the distribution of $\bf{d}_{\nott}$'s
+values, and compute $\mf{z}_\chi$ and $\mf{z}_V$.
 
 \section{Model Validation}
 \label{sec:validation}
@@ -1000,12 +1005,7 @@ algorithms we present are single-threaded. The operating system is Fedora 16.
   \label{pic:syntruntime}
     \caption{Runtime experiments with synthetic data.}
 \end{figure*}
-\begin{figure}[t!]
-  \centering
-  \includegraphics[height=3.5cm]{Plots/Synth-Dedup}
-  \caption{Variety of the views.}
-  \label{pic:synthvariety}
-\end{figure}
+
 \begin{table}[t!]
     \centering
     \small
@@ -1102,6 +1102,12 @@ effect because the views are completely disjoint anyway (the threshold  does
 separate the correlated columns, but this does not influence our metric). In
 the Soft case, we see that a lower threshold forces Ziggy to introduce variety.
 
+\begin{figure}[t!]
+  \centering
+  \includegraphics[height=3.5cm]{Plots/Synth-Dedup}
+  \caption{Variety of the views.}
+  \label{pic:synthvariety}
+\end{figure}
 
 \subsection{Real Data}
 \label{sec:realdata}
