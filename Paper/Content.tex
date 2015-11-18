@@ -925,15 +925,16 @@ the target column. Here again, our rationale is the following: if a set of
 column is a good predictor for the user's selection, then it contains useful
 information.
 
-Our first baseline is \texttt{Claude}, a recently published feature search
-algorithm. We chose this method because it uses a multi-view approach, and
-therefore its results are directly comparable to ours: like Ziggy, it returns a
-fixed number of subspaces, with a user-specified number of dimensions.
-Technically, Claude differs on two points. First, it uses a different notion of
-interestingness: it seeks groups of columns which are strongly dependent to the
-target, dependency being measured with the mutual information. Second, Claude
-builds subspaces with a level-wise, beam search algorithm. We used the authors'
-implementation.  We expect this approach to be both fast and accurate.
+Our first baseline is \texttt{Claude}~\cite{Sellam2015Semi}, a recently
+published feature search algorithm. We chose this method because it uses a
+multi-view approach, and therefore its results are directly comparable to ours:
+like Ziggy, it returns a fixed number of subspaces, with a user-specified
+number of dimensions.  Technically, Claude differs on two points. First, it
+uses a different notion of interestingness: it seeks groups of columns which
+are strongly dependent to the target, dependency being measured with the mutual
+information. Second, Claude builds subspaces with a level-wise, beam search
+algorithm. We used the authors' implementation.  We expect this approach to be
+both fast and accurate.
 
 Our second baseline is \texttt{Clique}, inspired by the pattern mining
 literature~\cite{xie2010max}. The idea is to build a graph inside which the
@@ -1219,11 +1220,14 @@ acknowledge the similarity between our work and some feature selection
 algorithms, and compare them directly in Section~\ref{sec:experiments}.
 
 \textbf{Data Exploration} Recent works in data exploration have tackled
-different but related problems. SeeDB~\cite{vartak2015see} also re\-com\-mends
-visualizations, but it focuses on \texttt{GROUP BY} aggregates in data
-warehouse applications. Lloyd et al.'s automated statistician~\cite{Lloyd2014ABCD}
-describes regression models in natural language. These approaches are somewhat
-complementary to ours, and there would be much to gain by combining them.
+different but related problems. Similarly to our work,
+SeeDB~\cite{vartak2015see} re\-com\-mends visualizations by seeking co\-lumns on
+which a set of tuples have an unusual behavior. However, they focus on
+\texttt{GROUP BY} aggregates on data warehouses, while we focus on
+statistical descriptors on flat tables. Lloyd et al.'s automated
+statistician~\cite{Lloyd2014ABCD} describes regression models in natural
+language. These approaches are somewhat complementary to ours, and there would
+be much to gain by combining them.
 
 
 \section{Conclusion}
