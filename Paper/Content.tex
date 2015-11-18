@@ -4,12 +4,12 @@ Data exploration has gained lots of attentions over the last few years. The
 main challenge is to support users with little prior knowledge, and no clear
 objective. Some users need a preliminary impression of the data before engaging
 into more structured tasks. Others are browsing in the hope to discover new
-insights.  To help them, several authors have proposed systems to ``play'' with
-the data~\cite{abouzied2012dataplay, sellam2013meet, liarou2014dbtouch,
-dimitriadou2014explore}. These systems offer some textual or graphical
-interface, through which explorers can create, visualize and modify selections of
-tuples quickly. Thus, users are engaged in a tight trial-and-error loop,
-through which they discover their datasets. 
+insights.  To help them, several authors have proposed data exploration
+systems~\cite{abouzied2012dataplay, dimitriadou2014explore, liarou2014dbtouch,
+sellam2013meet}. These systems offer some textual or graphical interface,
+through which explorers can create, visualize and modify selections of tuples
+quickly. Thus, users are engaged in a tight trial-and-error loop, through which
+they discover their datasets. 
 
 Data exploration systems rely on a crucial assumption: they suppose that if the
 users see an interesting set of tuples (e.g., through tables or
@@ -47,8 +47,7 @@ database engine, Ziggy can veritably simulate a conversation: the
 user issues queries, and Ziggy replies in natural language. Our system can
 process 10,000s tuples on dozens of variables within a second, and it can cope with
 both numerical and nominal data, including missing values.  Thus, it can
-readily replace the output of a data exploration system. To summarize, here are
-our contributions: \begin{itemize0}
+readily replace the output of a data exploration system. To summarize: \begin{itemize0}
     \item We introduce and formalize the multi-view subset characterization problem.
     \item We describe Ziggy, a simple, efficient and robust system to describe
         selections of tuples in natural language
@@ -417,6 +416,35 @@ the former while constraining the latter, as exposed in Equation~\ref{prob2}.
   amount of dissimilarity added by each candidate.}
   \label{pic:greedy}
 \end{figure}
+\begin{algorithm}[t!]
+\caption{View Construction}
+\label{algo:view_search}
+\begin{algorithmic}
+    \Function{DetectViews}{$K$, $D$, $L$}
+    \For{$k \in [1,K]$}
+        \State $\text{Cand} \gets \{\rb{x}^1, \ldots, \rb{x}^M\}$
+        \State $\text{Red.Gains} \gets 
+            \{\Delta\mf{S}(\rb{d}, \rb{V}^{1..k}), \text{~for~} \rb{d} \in \text{Cand}\}$
+         \State $\text{Cand} \gets 
+            \{\rb{d} \text{~where~not~Red.Gains}(\rb{d}) > L \}$
+        \State $\text{Dis.Gains} \gets 
+        \{\Delta\mf{D}(\rb{d}, \rb{d}'), \text{~for~} \rb{d},\rb{d}' \in \text{Cand}\}$
+        \State $\rb{V}^k \gets \rb{V}^k \cup \{\text{argmax}_{\bf{d}, \bf{d}'}\ \text{Dis.Gains}\}$
+        \For {$d \in [3, D]$}
+            \State $\text{Cand} \gets \{\rb{x}^1, \ldots, \rb{x}^M\}
+                \setminus \rb{V}^k$
+            \State $\text{Red.Gains} \gets 
+                \{\Delta\mf{S}(\rb{d}, \rb{V}^{1..k}), \text{~for~} \rb{d} \in \text{Cand}\}$
+             \State $\text{Cand} \gets 
+                \{\rb{d} \text{~where~not~Red.Gains}(\rb{d}) > L \}$
+            \State $\text{Dis.Gains} \gets 
+                \{\Delta\mf{D}(\rb{d}, \rb{V}^{k}), \text{~for~} \rb{d} \in \text{Cand}\}$
+            \State $\rb{V}^k \gets \rb{V}^k \cup \{\text{argmax}_{\bf{d}}\ \text{Dis.Gains}\}$
+        \EndFor
+    \EndFor
+    \EndFunction
+\end{algorithmic}
+\end{algorithm}
 
 Once the user has provided a selection of tuples, Ziggy performs two steps.
 First, it computes the Zig-Components, for each column and each pair of columns
@@ -485,35 +513,6 @@ in~$\mathcal{O}(KMD)$. Thanks to this heuristic, we avoid an exhaustive search
 of $\binom{M}{D}$ possible possible view combinations, which would lead to an
 unpractical $\mathcal{O}(KM^D)$ runtime.
 
-\begin{algorithm}[t]
-\caption{View Construction}
-\label{algo:view_search}
-\begin{algorithmic}
-    \Function{DetectViews}{$K$, $D$, $L$}
-    \For{$k \in [1,K]$}
-        \State $\text{Cand} \gets \{\rb{x}^1, \ldots, \rb{x}^M\}$
-        \State $\text{Red.Gains} \gets 
-            \{\Delta\mf{S}(\rb{d}, \rb{V}^{1..k}), \text{~for~} \rb{d} \in \text{Cand}\}$
-         \State $\text{Cand} \gets 
-            \{\rb{d} \text{~where~not~Red.Gains}(\rb{d}) > L \}$
-        \State $\text{Dis.Gains} \gets 
-        \{\Delta\mf{D}(\rb{d}, \rb{d}'), \text{~for~} \rb{d},\rb{d}' \in \text{Cand}\}$
-        \State $\rb{V}^k \gets \rb{V}^k \cup \{\text{argmax}_{\bf{d}, \bf{d}'}\ \text{Dis.Gains}\}$
-        \For {$d \in [3, D]$}
-            \State $\text{Cand} \gets \{\rb{x}^1, \ldots, \rb{x}^M\}
-                \setminus \rb{V}^k$
-            \State $\text{Red.Gains} \gets 
-                \{\Delta\mf{S}(\rb{d}, \rb{V}^{1..k}), \text{~for~} \rb{d} \in \text{Cand}\}$
-             \State $\text{Cand} \gets 
-                \{\rb{d} \text{~where~not~Red.Gains}(\rb{d}) > L \}$
-            \State $\text{Dis.Gains} \gets 
-                \{\Delta\mf{D}(\rb{d}, \rb{V}^{k}), \text{~for~} \rb{d} \in \text{Cand}\}$
-            \State $\rb{V}^k \gets \rb{V}^k \cup \{\text{argmax}_{\bf{d}}\ \text{Dis.Gains}\}$
-        \EndFor
-    \EndFor
-    \EndFunction
-\end{algorithmic}
-\end{algorithm}
 
 \begin{table*}[t!]
     \centering
@@ -652,30 +651,10 @@ method~\cite{wasserman2013all}.
 \label{sec:reporting}
 \begin{figure}[t!]
   \centering
-  \includegraphics[width=\columnwidth]{Figures/ReportGeneration}
+  \includegraphics[width=0.95\columnwidth]{Figures/ReportGeneration}
   \caption{Ziggy's report generation pipeline.}
   \label{pic:reportpipeline}
 \end{figure}
-\begin{table}[t!]
-    \centering
-    \begin{tabular}{| p{4cm} | c | c |}
-      \hline
-      Description & Exceptional? & Weak?\\
-      \hline
-      $\mf{z_\mu} \geq 0 \wedge \bar{\rb{d}}_{\nott} \geq 0$: ``increase'' &
-          \multirow{4}{1.2cm}{$z_\mu^{\bf{d}}$ in top 5\%} & 
-              \multirow{4}{1.5cm}{$|\mf{z_\mu^{\bf{d}}}| < 0.2$ or $p_\mu^{\bf{d}} < 0.01$}\\
-      $\mf{z_\mu} \geq 0 \wedge \bar{\rb{d}}_{\nott} < 0$: ``decrease'' & &\\
-      $\mf{z_\mu} < 0 \wedge \bar{\rb{d}}_{\nott} \geq0$: ``decrease'' & &\\
-      $\mf{z_\mu} < 0 \wedge \bar{\rb{d}}_{\nott} < 0$: ``increase'' & &\\
-      \hline
-    \end{tabular}
-    \caption{Example of handwritten rules for the difference of means
-    $\mf{z_\mu}$. The variable $p_\mu$ describes the confidence (p-value), as
-described in Section~\ref{sec:validation}.} 
-\label{tab:handwritten}
-\end{table}
-
 We explained how our system detects views. We now detail Ziggy's report generation
 pipeline, through which it justifies its choices. 
 
@@ -718,6 +697,26 @@ with exceptional components. It plots the remainder on demand. To determine
 which type of visualization to use, it checks the type of the columns, and
 applies usual techniques: it uses density plots and histograms for one
 dimension data, and scatterplots and heat maps for two-dimension data.
+\begin{table}[t!]
+    \centering
+    \begin{tabular}{| p{4cm} | c | c |}
+      \hline
+      Description & Exceptional? & Weak?\\
+      \hline
+      $\mf{z_\mu} \geq 0 \wedge \bar{\rb{d}}_{\nott} \geq 0$: ``increase'' &
+          \multirow{4}{1.2cm}{$z_\mu^{\bf{d}}$ in top 5\%} & 
+              \multirow{4}{1.5cm}{$|\mf{z_\mu^{\bf{d}}}| < 0.2$ or $p_\mu^{\bf{d}} < 0.01$}\\
+      $\mf{z_\mu} \geq 0 \wedge \bar{\rb{d}}_{\nott} < 0$: ``decrease'' & &\\
+      $\mf{z_\mu} < 0 \wedge \bar{\rb{d}}_{\nott} \geq0$: ``decrease'' & &\\
+      $\mf{z_\mu} < 0 \wedge \bar{\rb{d}}_{\nott} < 0$: ``increase'' & &\\
+      \hline
+    \end{tabular}
+    \caption{Example of handwritten rules for the difference of means
+    $\mf{z_\mu}$. The variable $p_\mu$ describes the confidence (p-value), as
+described in Section~\ref{sec:validation}.} 
+\label{tab:handwritten}
+\end{table}
+
 
 \section{Setting Parameters}
 \label{sec:parameters}
@@ -1189,8 +1188,7 @@ dramatic as the size of the datasets increase.
         MAGICTelescope & 11 & 19,022 & 1 & 10\\
         \hline
     \end{tabular}
-    \caption{Characteristics of the datasets. The last two columns are used for
-    comparison with 4S.}
+    \caption{Characteristics of the datasets.}
     \label{tab:datasets}
 \end{table}
 
