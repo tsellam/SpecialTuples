@@ -175,8 +175,8 @@ objective function.
       Stand. Dev.& Contin.  & - &
       $ \mf{z}_{\sigma}^{\bf{d}}=(s_t-s_{\nott})/s_{\overline{t}}$ & \\
       Frequencies & Discrete & - & 
-      $\mf{z}_\chi ^{\bf{d}}= \chi^2$ &
-      Pearson's $\chi^2$ goodness-of-fit test~\cite{wasserman2013all}\\
+      $\mf{z}_\chi ^{\bf{d}}= \sqrt{\chi^2}$ &
+      Based on Pearson's $\chi^2$ goodness-of-fit test~\cite{wasserman2013all}\\
       Dependence & Contin. & Contin. & $\mf{z}_r^{\bf{d}, \bf{d}'}  = r_t - r_{\nott} $ & 
       $r_t$is the correlation coefficient between $\bf{d}_t$ and  $\bf{d}'_t$\newline
       $r_{\nott}$ is the correlation coefficient between $\bf{d}_{\nott}$ and
@@ -250,6 +250,13 @@ $\mf{S}$.
 
 \subsection{Explainable Mass Dissimilarity}
 \label{sec:explain}
+\begin{figure}
+  \centering
+  \includegraphics[width=0.65\columnwidth]{Figures/Zig-Dissim}
+  \caption{Illustration of Ziggy's Dissimilarity.}
+  \label{pic:zigdis}
+\end{figure}
+
 Let us begin with the dissimilarity~$\mf{D}$. As mentioned previously, we could
 borrow any general divergence measure from the statistics literature, such as
 the KL-divergence. However, these measurements operate as ``black boxes'': they
@@ -266,11 +273,11 @@ the same average for every column, then they probably come from the same
 distribution. Oppositely, if the averages are different, then they probably
 come from different distributions. From this observation, we can build a simple
 dissimilarity measure: for each column $\bf{d}$, we compute the differences
-between the means $\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott}$. We obtain
-a vector of $V$ Zig-Components. We could add more components by testing other
-properties: for example, we could measure the difference between the variance
-of each columns.  Finally, we aggregate these components into one composite
-indicator: this is is the Zig-Dissimilarity.
+between the means $\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott}$, as shown in
+Figure~\ref{pic:zigdis}. We obtain a vector of $V$ Zig-Components. We could add
+more components by measuring other properties, such as the difference between
+the variances.  Finally, we aggregate these components into one
+composite indicator: this is is the Zig-Dissimilarity.
 
 \begin{definition}
     A Zig-Component is a function $\mf{z} : \rb{V}\times\rb{V} \to \mathbb{R}$
@@ -298,9 +305,9 @@ which correlations are either strengthened or weakened across the datasets. In
 the discrete case, we substitute the correlation coefficient by Cram\'er' s V.
 This function also measures the associations between two variables, and it
 varies similarly between 0 and 1~\cite{cohen1977statistical}. Its value is
-$\sqrt{X/(N(\min(l,c) - 1))}$, where $X$ is Pearson's $\chi^2$ statistic and
-$(l,c)$ are the dimensions of the contingency table of $\bf{d}_t$ and
-$\bf{d}_{\nott}$.
+$\sqrt{\chi^2/(N(\min(|\bf{d}_t|,|\bf{d}_{\nott}|) - 1))}$, where $\chi^2$ is Pearson's
+$\chi^2$ statistic, and $|\bf{d}_t|,|\bf{d}_{\nott}|$ are the number of distinct
+values in $\bf{d}_t$ and $\bf{d}_{\nott}$ respectively.
 
 Once we computed the Zig-Components $\mf{z}_1, \ldots, \mf{z}_Z$, we obtain the
 Zig-Dissimilarity as follows. First, we compute the absolute values
@@ -329,15 +336,14 @@ for the latter.  These parameters also let users express their preferences: for
 example, a novice user may value one-dimension Zig-Components over those based
 on correlation.
 
-Table~\ref{tab:dissim} shows that we measure differences in spaces of one and
-two dimensions only.  In principle, we could test spaces with more dimensions.
-We chose not to do so, for two practical reasons. First, we suppose that
-relationships in three dimensions or more are harder to convey and understand
-in natural language.  Second, the number of relationships to be inspected grows
-exponentially with the dimensionality of the test. This property harms Ziggy's
-runtime, and it leads to much longer outputs. We will show in
-Section~\ref{sec:experiments} that this Naive Bayes-like design choice has little
-practical effect on the accuracy of our model.
+Table~\ref{tab:dissim} shows that we report univariate and bivariate
+statistics.  In principle, we could test spaces with more dimensions.  We chose
+not to do so, for two reasons. First, relationships in three dimensions or more
+are harder to convey and understand in natural language.  Second, the number of
+relationships to be inspected grows exponentially with the dimensionality of
+the Zig-Component. This hurts Ziggy's runtime, and leads to much longer
+outputs. We will show in Section~\ref{sec:experiments} that this
+restriction has little practical effect on the Ziggy's views.
 
 
 \subsection{Dependency Measure}
@@ -485,7 +491,6 @@ unpractical $\mathcal{O}(KM^D)$ runtime.
 \begin{algorithmic}
     \Function{DetectViews}{$K$, $D$, $L$}
     \For{$k \in [1,K]$}
-
         \State $\text{Cand} \gets \{\rb{x}^1, \ldots, \rb{x}^M\}$
         \State $\text{Red.Gains} \gets 
             \{\Delta\mf{S}(\rb{d}, \rb{V}^{1..k}), \text{~for~} \rb{d} \in \text{Cand}\}$
@@ -832,7 +837,7 @@ Exceptional and Weak.}
   \caption{Ziggy's explanations for Views 1 and 4}
   \label{pic:zigdetail}
 \end{figure*}
-We now apply Ziggy on the real use case which inspired our running example.
+We now apply Ziggy on the data which inspired our running example.
 Our aim is to understand which factors lead to innovation, and more
 specifically patents.  To answer this questions, we aggregated several
 databases from the OECD, an international economic organization. All the data
@@ -847,8 +852,8 @@ values. We filtered out the categorical columns with more than 20 distinct
 values (e.g., primary keys, countries and region names). 
 
 Our selection of tuples contains the top 10\% regions for the statistic
-\texttt{patent applications per million inhabitant}. We set $D=6$ with the
-adaptive stopping method described in Section~\ref{sec:parameters}, and we used
+\texttt{patent applications per million inhabitant}. We set $D=6$, with the
+adaptive stopping method described in Section~\ref{sec:parameters}. We use
 $\mf{S}_{hard}$, with a maximum value of $L=0.75$.  Ziggy detects a total of 12
 views, which columns are reported in Table~\ref{tab:ziggysviews}.
 
@@ -894,8 +899,6 @@ investigations.
 \section{Experiments}
 \label{sec:experiments}
 
-
-
 \textbf{Metrics.} We now present our experimental results. We want to evaluate
 three aspects of our system: the \emph{quality} the views, their
 \emph{diversity}, and Ziggy's \emph{runtime}. To evaluate the quality of the
@@ -903,20 +906,21 @@ views, we simulate users with statistical classifiers. We assume that if a
 classifier can learn from a view, then so can a real user. Technically, we
 materialize the user's selection into a vector $\rb{t} = (t_1, \ldots,
 t_n)^\top$: $t_i=1$ if the tuple is chosen, 0 otherwise.  We then train a
-classifier, using the view $\bf{D}^i$ as feature set and the user's selection
-$\bf{t}$ as target. We then check if the classifier can accurately reconstruct
-$\bf{t}$ from $\bf{D}^i$. If so, we deduce that the selection has a
-recognizable structure in the subspace.  Therefore, the view contains
+classifier, using the view $\bf{V}$ as feature set and the user's selection
+$\bf{t}$ as target. To obtain our quality score, 
+we check if the classifier can accurately model the user's selection $\rb{t}$ with the
+variables in $\bf{V}$. If so, we deduce that the selection has a
+``peculiar'' structure in the subspace, and therefore the view contains
 exploitable information. Oppositely, if the classifier cannot reconstruct the
 user's selection, then either the classifier is poor, or the view contains no
 information about the selection. We use a 5-Nearest Neighbor (5-NN) classifier,
 and we report the F1 measure with 5 cross-validation (higher is better). We
-chose the nearest neighbor algorithm for convenience: it is fast, and it gave
-us good predictive performance. The
-last two aspects are easier to quantify. To measure diversity, we report the
-number of distinct columns used the set of views (higher is better). We measure
-runtime with the total wall clock time - including preprocessing in Ziggy's
-case (lower is better).
+chose the 5-NN algorithm for convenience: it is fast, and it gave
+us good predictive performance. 
+
+To measure diversity, we report the number of distinct columns used by the
+views in the result set (higher is better). We measure runtime with the total
+wall clock time, including preprocessing in Ziggy's case (lower is better).
 
 \textbf{Baselines.} We compare Ziggy to four state-of-the-art subspace
 detection methods from the data mining literature. Our first three methods are
@@ -951,17 +955,17 @@ selection literature~\cite{guyon2003introduction}. This algorithm trains 5-NN
 classifiers with increasingly large sets of variables. First, it tests each
 variable, and it keeps the top $K$. Then, it tests combinations of two columns.
 The process is repeated until the views reach $D$ dimensions. We chose 5-NN
-because it is the algorithm we use to evaluate the views. We expect this
-approach to be close to optimal, but also very slow. Thus, we only use it as a
-``gold standard'' for our experiments with real data.
+because it is the algorithm we use to evaluate the views, therefore, we
+optimize exactly what we measure. We expect this approach to be accurate, but
+also very slow. Thus, we only use it as a ``gold standard'' for our experiments
+with real data.
 
 The last baseline, \texttt{4S}, detects subspaces in an unsupervised manner: it
-seeks ``interesting'' subspaces, independently of the user's selection. More
-precisely, it detects groups of variables which are strongly mutually
-dependent, using an multivariate correlation measure. We used
-the author's implementation written in Java. We expect $\texttt{4S}$ to be
-fast, but also less accurate than its competitors because of it unsupervised
-nature.
+seeks subspaces which contain clusters and outliers, independently of the
+user's selection. To do so, it detects groups of variables which are strongly
+mutually dependent, using an multivariate correlation measure. We used the
+author's implementation written in Java. We expect $\texttt{4S}$ to be fast,
+but also less accurate than its competitors because of it unsupervised nature.
 
 \textbf{Setup.} We implemented Ziggy in R, exploiting its native primitives for critical
 operations (namely computing means, covariance matrices and cross-tabulation).
@@ -1067,17 +1071,15 @@ state-of-the-art feature selection algorithms.
 
 \textbf{Runtime.} Figure~\ref{pic:genruntime} illustrates the total runtime
 with regards to the number of rows and columns in the database. We ignored the
-algorithms \texttt{4S} and \texttt{Clique}, which were slower than the
-other candidates. We observe that Ziggy's performance is spectacular: it is
-an order of magnitude faster than \texttt{Claude}, which is itself faster than
-the other competitors. And yet, all the algorithms involved in our benchmark
-have the same $\mathcal{O}(ND^2)$ complexity. We explain the difference with Ziggy's
-simpler computations, which reduce the constant factor. For instance, Claude
-needs to estimate the mutual information between possible pair of columns and
-$\bf{t}$. In comparison Ziggy compares every pairs of correlations inside
-and outside the selection. This operation has the same complexity, but is is
-much faster since it involves no binning, logarithms or branching - it involves
-little more than scans.
+algorithms \texttt{4S} and \texttt{Clique}, which were slower than the other
+candidates. We observe that Ziggy's performance is spectacular: it is an order
+of magnitude faster than \texttt{Claude}, which is itself faster than the other
+competitors. And yet, all the algorithms involved in our benchmark have the
+same $\mathcal{O}(ND^2)$ complexity. We explain the difference with Ziggy's
+simpler computations. Ziggy relies on means and correlations, which are much
+lighter than \texttt{Claude}'s information theoretic estimators. Besides, when
+evaluating its views, Ziggy considers at most two dimensions at a time, while
+its competitors also test higher level dependencies.
 
 Figure~\ref{pic:detruntime} shows where \texttt{Ziggy-Soft} spends its time.
 By far, the most expensive operations are the offline computations. This
@@ -1162,9 +1164,6 @@ Figure~\ref{pic:realruntime}. The results are consistent with our previous
 conclusions: Ziggy outperforms all of its competitors, and the speedup gets more
 dramatic as the size of the datasets increase.
 
-
-\section{Related Work}
-\label{sec:related-works}
 \begin{table}[!t]
     \centering
     \small
@@ -1187,24 +1186,49 @@ dramatic as the size of the datasets increase.
     \label{tab:datasets}
 \end{table}
 
-{\color{red} TO DO}
+\section{Related Work}
+\label{sec:related-works}
 
-\textbf{Feature Selection.} Feature selection seeks columns of $\rb{V}$ from
-which we can predict $\rb{t}$. Ultimately, the goal is to estimate
-$p(t|\rb{x})$. Our problem is symmetric: we seek columns of $\rb{V}$ which are
-influenced by $\rb{t}$. Hence, we focus on $p(\rb{x}|t)$. According to Bayes'
-theorem, these two problems are equivalent. And indeed, some feature selection
-methods, such as LDA, are also based on $p(\rb{x}|t)$. But the differences do
-not stop here.  Recall we focus on interpretation, while feature selection
-algorithms target prediction. Therefore, we seek a few, non-redundant views,
-while classic algorithms focus on single, potentially complex views. Also, most
-feature selection algorithms optimize class separability. In this paper, we are
-interested in any kind of dissimilarity. For instance, most feature selection
-algorithms would reject the view presented in Figure~\ref{pic:sameMean}. For
-us, this view is perfectly acceptable. 
+\textbf{Outlier Description.} Outlier description consists in finding subspaces
+inside which a particular tuple is an outlier~\cite{angiulli2009detecting,
+duan2014mining,knorr1999finding,zhang2006detecting}. This task directly
+inspired our work, but its objectives are different. Outlier description
+describes single objects, while we describe sets of tuples.  It focuses on
+distance-based outliers, while we focus on probability distributions,
+regardless of how central or isolated the user's selection is.  Each of these
+work focus on one data type each, and little of them  mention redundancy (an
+exception is~\cite{duan2014mining}, which seeks closed sets). None of these
+works discuss how to report results.
 
-{\color{red} Big TODO: contrast with Bailey's approach.
-I still have to read about metric learning.}
+\textbf{Contrast Mining.} Contrast mining is a similar task, but in a pattern
+mining context: the aim is to differentiate two or more populations by
+identifying patterns which are present (e.g., have a high support) in one
+population and not the
+other~\cite{vreeken2007characterising,webb2008detecting}. This line of work is
+related but orthogonal, because we deal with neither itemsets nor patterns.
+Notably, Loekito and Bailey introduced a  method to identify discriminative 
+variables~\cite{loekito2008mining}.  Yet, their work focus on ``contrast of
+contrasts'' for categorical data, a close but different task
+
+\textbf{Feature Selection.} As noted in Section~\ref{sec:experiments}, our work
+is intimately related to feature selection. Feature selection seeks predictive
+variables for a classification or regression task~\cite{guyon2003introduction}.
+We can map this task to our problem by treating the user's selection like a
+column to be predicted. The main difference is that feature selection seeks
+statistical accuracy, while we target interpretation. This, most feature
+selection algorithms seek one optimal set of variables, while we seek several
+small sets of variables. Also, most algorithms optimize class separability only,
+while we are interested in any difference in distribution. Nevertheless, we
+acknowledge the similarity between our work and some feature selection
+algorithms, and compare them directly in Section~\ref{sec:experiments}.
+
+\textbf{Data Exploration} Recent work in data exploration have tackled
+different but related problems. SeeDB~\cite{vartak2014seedb} also recommends
+visualizations, but it focuses on choosing \texttt{GROUP BY} aggregates in a
+data warehouse scenario. Lloyd et al.'s automated
+statistician~\cite{Lloyd2014ABCD} describes regression models in natural
+language. These approaches are somewhat complementary to ours, and there would
+be much to gain by combining them.
 
 
 \section{Conclusion}
