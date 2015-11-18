@@ -976,21 +976,23 @@ algorithms we present are single-threaded. The operating system is Fedora 16.
 
 \begin{figure*}[t!]
   \centering
-  \includegraphics[width=\textwidth]{Plots/Synth-Accuracy}
+  \includegraphics[height=3.5cm]{Plots/Synth-Accuracy}
   \caption{Average quality of the views varying the data generator parameters.}
   \label{pic:synthquali}
 \end{figure*}
 \begin{figure*}[t!]
     \centering
     \begin{subfigure}[b]{0.5\textwidth}
-    \includegraphics[height=4cm, width=\textwidth]{Plots/Synth-Runtime}
+        \centering
+    \includegraphics[height=3.5cm]{Plots/Synth-Runtime}
     \caption{Runtime for the three fastest algorithms, varying data parameters.
     The points for \texttt{Ziggy-Hard} and \texttt{Ziggy-Soft} overlap.}
     \label{pic:genruntime}
     \end{subfigure}
     ~~
     \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[height=4cm, width=\textwidth]{Plots/Synth-TimeDetail}
+        \centering
+        \includegraphics[height=3.5cm]{Plots/Synth-TimeDetail}
         \caption{Breakdown of the total runtime for \texttt{Ziggy-Soft},
         varying the number of columns.}
     \label{pic:detruntime}
@@ -1000,7 +1002,7 @@ algorithms we present are single-threaded. The operating system is Fedora 16.
 \end{figure*}
 \begin{figure}[t!]
   \centering
-  \includegraphics[width=\columnwidth]{Plots/Synth-Dedup}
+  \includegraphics[height=3.5cm]{Plots/Synth-Dedup}
   \caption{Variety of the views.}
   \label{pic:synthvariety}
 \end{figure}
@@ -1213,28 +1215,39 @@ contrasts'' for categorical data, a close but different task
 \textbf{Feature Selection.} As noted in Section~\ref{sec:experiments}, our work
 is intimately related to feature selection. Feature selection seeks predictive
 variables for a classification or regression task~\cite{guyon2003introduction}.
-We can map this task to our problem by treating the user's selection like a
+We can map this task to our problem by treating the user's selection as a
 column to be predicted. The main difference is that feature selection seeks
-statistical accuracy, while we target interpretation. This, most feature
+statistical accuracy, while we target interpretation. Thus, most feature
 selection algorithms seek one optimal set of variables, while we seek several
-small sets of variables. Also, most algorithms optimize class separability only,
+small sets of variables. Also, they optimize class separability only,
 while we are interested in any difference in distribution. Nevertheless, we
 acknowledge the similarity between our work and some feature selection
 algorithms, and compare them directly in Section~\ref{sec:experiments}.
 
-\textbf{Data Exploration} Recent work in data exploration have tackled
-different but related problems. SeeDB~\cite{vartak2014seedb} also recommends
-visualizations, but it focuses on choosing \texttt{GROUP BY} aggregates in a
-data warehouse scenario. Lloyd et al.'s automated
-statistician~\cite{Lloyd2014ABCD} describes regression models in natural
-language. These approaches are somewhat complementary to ours, and there would
-be much to gain by combining them.
+\textbf{Data Exploration} Recent works in data exploration have tackled
+different but related problems. SeeDB~\cite{vartak2015see} also recommends
+visualizations, but it focuses on \texttt{GROUP BY} aggregates in a data
+warehouse scenario. Lloyd et al.'s automated statistician~\cite{Lloyd2014ABCD}
+describes regression models in natural language. These approaches are somewhat
+complementary to ours, and there would be much to gain by combining them.
 
 
 \section{Conclusion}
 \label{sec:conclusions}
+We exposed the tuple characterization problem, and presented our solution,
+Ziggy. Our experiments show that Ziggy can produce informative, non-redundant
+results within a fraction of the time taken by state-of-the-art machine
+learning algorithms. In fact,  we could apply our solution to a wide range of
+problems beyond the strict realm of data exploration, including feature
+selection and subspace search.
 
-
+We are genuinely excited by the perspectives offered by this study. In the
+future, we will study how our system can adapt to our user's preferences. We
+will investigate to what extent we can enrich our framework with other measures
+of difference, using for instance Bayesian modeling. Finally, the problem of
+how to describe tuples with natural language is immense, but it has, to the
+best of our knowledge, only received little attention. We believe that this
+field is full of promises, for data explorers and data researchers alike.
 
 
 %\section*{[Private] Appendix: Ziggy vs.Claude}
