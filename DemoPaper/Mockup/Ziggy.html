@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<head>
+    <title>Thibault Sellam's homepage</title>
+     <link rel="stylesheet" href="template-styles.css">
+</head>
+
+<style>
+
+table {
+    border-spacing: 5px;
+    font-size:10pt;
+}
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 10px;
+}
+
+table tr:nth-child(even) {
+    background-color: #eee;
+}
+table tr:nth-child(odd) {
+    background-color: #fff;
+}
+table th {
+    color: white;
+    background-color: black;
+}
+
+
+label, textarea{
+  display:inline-block;
+  vertical-align:middle;
+
+}
+
+</style>
+<body>
+
+
+    <div class="header">
+        <div class="container">
+            <h1 class="header-heading" style="display: inline; margin-right:
+                2em;">Ziggy</h1>
+            
+            <label for="db-select">Dataset</label>
+            <select  name="db-select" id="db-select" style="margin-right: 1em;">
+                <option value="US Crime">US Crime</option>
+            </select>
+
+            <label for="textarea">Query</label>
+            <textarea rows="4" cols="50" name="textarea" id="textarea"  style="margin-right: 1em;">SELECT * 
+FROM US_CRIMES 
+WHERE ViolentCrimeRate > 0.70;
+            </textarea>
+
+            <button style="width:60px;height:50px;" type="button">Go!</button>
+
+
+        </div>
+    </div>
+
+    <div class="content">
+    
+        <table border="1" style="width:30%;">
+
+        <tr>
+            <td> <b>NumIlleg, ViolentCrimesPerPop, PctUsePubTrans, NumStreet</b> </td>
+        </tr>
+        <tr>
+             <td> NumInShelters, NumUnderPov, whitePerCap, HousVacant </td>
+        </tr>
+        <tr>
+             <td> PctFam2Par, PctSameHouse85, pctWInvInc, HispPerCap </td>
+        </tr>
+        <tr>
+             <td> PctHousLess3BR, RentHighQ, perCapInc, PctHousOwnOcc </td>
+        </tr>
+        <tr>
+             <td> MedRent, PctPersOwnOccup, PctOccupMgmtProf, RentMedian </td>
+        </tr>
+        <tr>
+             <td> PctKids2Par, PctPersDenseHous, racepctblack, RentLowQ </td>
+        </tr>
+        <tr>
+             <td> MedOwnCostPctIncNoMtg, PctYoungKids2Par, PctTeen2Par, racePctHisp </td>
+        </tr>
+        <tr>
+             <td> MalePctDivorce, PctOccupManu, PersPerRentOccHous, TotalPctDiv </td>
+        </tr>
+        <tr>
+             <td> PctNotHSGrad, PersPerOwnOccHous, PctRecentImmig, householdsize </td>
+        </tr>
+        <tr>
+             <td> medIncome, MedNumBR, PctBSorMore, PersPerOccupHous </td>
+        </tr>
+        <tr>
+             <td> numbUrban, PctVacantBoarded, PctIlleg, MalePctNevMarr </td>
+        </tr>
+        <tr>
+             <td> PctSameCity85, racePctWhite, PctPopUnderPov, agePct12t29 </td>
+        </tr>
+        <tr>
+             <td> PctHousOccup, pctWPubAsst, PctLess9thGrade, agePct65up </td>
+        </tr>
+        <tr>
+             <td> AsianPerCap, medFamInc, FemalePctDiv, PctWorkMomYoungKids </td>
+        </tr>
+        <tr>
+             <td> PctHousNoPhone, PctNotSpeakEnglWell, pctWWage, PctLargHouseFam </td>
+        </tr>
+        <tr>
+             <td> OwnOccLowQuart, PctSpeakEnglOnly, PctLargHouseOccup, PctVacMore6Mos </td>
+        </tr>
+        <tr>
+             <td> PctEmplProfServ, PctRecImmig5, PersPerFam, MedRentPctHousInc </td>
+        </tr>
+        <tr>
+             <td> agePct16t24, PctEmploy, blackPerCap, PctImmigRec10 </td>
+        </tr>
+        <tr>
+             <td> OwnOccHiQuart, PopDens, pctWSocSec, PctUnemployed </td>
+        </tr>
+        <tr>
+             <td> NumImmig, PctWorkMom, state, PctRecImmig10 </td>
+        </tr>
+        <tr>
+             <td> agePct12t21, PctEmplManu, pctWFarmSelf, LemasPctOfficDrugUn </td>
+        </tr>
+        <tr>
+             <td> MedYrHousBuilt, pctWRetire, PctSameState85, pctUrban </td>
+        </tr>
+        <tr>
+             <td> MedOwnCostPctInc, OtherPerCap, PctForeignBorn, PctBornSameState </td>
+        </tr>
+        <tr>
+             <td> LandArea, PctWOFullPlumb, PctImmigRec8, racePctAsian </td>
+        </tr>
+        </table>
+
+
+        <div style="width: 60%; display:block; "> 
+        <p>
+        <h2>Analysis of the view</h2>
+        <ul> <li>On the columns NumIlleg, NumStreet, PctUsePubTrans and
+            ViolentCrimesPerPop, the selection has a high average but also a
+            high variance.  
+            <li> Between columns NumIlleg and PctUsePubTrans,
+            the positive correlation appears as stronger.
+            <li>I discarded
+            35% effects, considered as weak.
+    </ul>
+        </p>
+        </div>
+
+      </div>
+</body>
