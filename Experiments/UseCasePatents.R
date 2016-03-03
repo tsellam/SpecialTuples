@@ -5,7 +5,7 @@ library(dplyr)
 source('../Code/Ziggy.R')
 source('../Code/ZiggyTalks.R')
 
-data_file <- read.csv("~/Data/Files/oecd/PatentsAndRegions.csv",
+data_file <- read.csv("~/Data/Files/oecd-innovation/PatentsAndRegions.csv",
                       row.names=1,
                       stringsAsFactors = F) %>%
              filter(!is.na(patent_applications_per_million))

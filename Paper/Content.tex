@@ -1,8 +1,8 @@
 \section{Introduction}
 \label{sec:introdction}
-Data exploration has gained lots of attentions over the last few years. The
+Data exploration has gained lots of attention over the last few years. The
 main challenge is to support users with little prior knowledge, and no clear
-objective. Some explorers need a preliminary impression of the data before
+objective. Some explo\-rers need a preliminary impression of the data before
 engaging into more structured tasks. Others are browsing in the hope to
 discover new insights. Several authors have proposed tools to help data
 exploration~\cite{abouzied2012dataplay, dimitriadou2014explore,
@@ -29,28 +29,27 @@ database contains more than a dozen columns?}
 
 The straightforward approach is to use multidimensional visualizations such as
 parallel coordinates or small multiples. Unfortunately, these methods tend to
-show every possible aspect of the data, thus they do not scale well. For
-instance, we would need at least 50 small multiples to visualize a dataset with
-only 10 columns. Dimensionality reduction algorithms such as PCA or
+show every possible aspect of the data, thus they cannot cope with the scale of
+the datasets we target.  Dimensionality reduction algorithms such as PCA or
 ICA~\cite{guyon2003introduction} are also common, but they ignore the user's
 selection, and hence may miss interesting combinations.  Besides, they rescale
 and rotate the variables, causing their output to be harder to interpret.
 
 In this paper we introduce our approach, \emph{multi-view subset
-characterization}. The main idea is to identify sets of columns on which the
-user's selection has an unusual distribution compared to the rest of the
-database.  We materialize this idea with Ziggy, a \emph{subset description
-engine}. Ziggy has two objectives: 1) It detects \emph{interpretable,
-non-redundant and statistically sound} sets of such columns. It does so quickly
-and robustly: thanks to aggressive optimizations, Ziggy can process 10,000s
-tuples on dozens of variables within a second. It can cope with both numerical
-and nominal data, including missing values. 2) Ziggy can \emph{explain} its
-output, using visualizations but also \emph{natural language}.  Thus, plugged
-on top of a database engine, Ziggy can veritably simulate a conversation: users
-issue queries, and Ziggy replies in plain English. While previous studies have
-described ways to \emph{query} databases in natural
-language~\cite{li2014constructing}, little to none of them have focused on
-describing the results. To summarize:
+characterization}. The main idea is to show how the selected tuples
+\emph{differ} from the rest of the database. To do so, we identify sets of
+columns on which the statistical distribution of these tuples is unusual.  We materialize
+this idea with Ziggy, a \emph{subset characterization engine}. Ziggy has two
+objectives: 1) It detects \emph{interpretable, non-redundant and statistically
+robust} sets of such columns. It does so quickly: thanks to aggressive
+optimizations, Ziggy can process 10,000s tuples on dozens of variables within a
+second. It can cope with both numerical and nominal data, inclu\-ding missing
+values. 2) Ziggy can \emph{explain} its findings, with visualizations but also
+\emph{natural language}.  Thus, plugged on top of a database engine, Ziggy can
+veritably simulate a conversation: users issue queries, and Ziggy replies in
+plain English. While previous studies have described ways to \emph{query}
+databases in natural language~\cite{li2014constructing}, little to none of them
+have focused on descri\-bing the results. To summarize:
 \begin{itemize0}
     \item We formalize the multi-view characterization problem.
     \item We describe Ziggy, an efficient and robust system to describe
@@ -66,58 +65,58 @@ Section~\ref{sec:algorithm}. We discuss how to validate our results and report
 them in Sections~\ref{sec:validation} and~\ref{sec:reporting}. We describe how
 to set parameters in Section~\ref{sec:parameters}. In
 Sections~\ref{sec:usecase} and~\ref{sec:experiments}, we apply our solution to
-real and synthetic data. Finally, we present related works and conclude in
+real and synthetic data. Finally, we present related work and conclude in
 Sections~\ref{sec:related-works} and \ref{sec:conclusions}.
 
 \section{Overview}
 \label{sec:genoverview}
 \begin{figure}
   \centering
-  \includegraphics[width=0.85\columnwidth]{Figures/Example}
+  \includegraphics[width=0.8\columnwidth]{Figures/Example}
   \caption{Two examples of subspaces for which the user's selection has an
   unusual distribution (using fictive data).}
   \label{pic:example}
 \end{figure}
 Let us introduce our problem through an example. A government analyst tries to
-understand what demographic, social and economic factors lead to innovation.
-More specifically, she is interested in patents: in which parts of the world do
-individuals submit patents? What lessons can she learn? To answer these
-questions, our analyst collects several databases with regional statistics, and
-loads them in her favorite business intelligence tool (possibly based on SQL or
-spreadsheets). She selects the top 10\% regions for which many patents are
-submitted, and ends up with an overwhelmingly large table, comprising a few
-dozen tuples and hundreds of columns. How can we help her?
+understand which demographic, social and economic factors lead to innovation.
+More speci\-fi\-cally, she is interested in patents: in which parts of the
+world do individuals submit patents? What lessons can she learn? She collects
+se\-ve\-ral hundred regional statistics, and loads them in her favorite
+Business Intelligence tool (possibly based on SQL or spreadsheets). She selects
+the top 10\% regions for which many patents are submitted, and ends up with an
+overwhelmingly large table, comprising a few dozen tuples and hundreds of
+columns. How can we help her?
  
 Our objective is twofold. First, we want to detect sets of columns on which our
 analyst's tuples are ``special'', that is, have an unusual distribution
-compared to the rest of the database. Second, we want to describe why we picked
-those columns, and what makes her tuples special.
+compared to the rest of the database. We assume that our user is interested in
+the differences between her selection and the remaining tuples, not the
+similarities.  This is a strong hypothesis, but recent work has shown that it
+covers a wide range of use cases~\cite{vartak2015see}.  Se\-cond, we want to
+describe why we picked those columns: how is the selection special?
 
 Figure~\ref{pic:example} depicts two of those sets: \texttt{\{Yearly
 Production, Average Income\}}, and \texttt{\{Years in Education, Number of
-Universities\}}.  We will refer to them as \emph{views}, or \emph{subspaces}.
-On all the variables, the selection has unusually high values.
-Therefore, we learn that regions with many patent applications tend to be
-richer and have solid education systems.  Observe that the views have a low
-dimensionality. Our aim is not to show \emph{all} the variables on which
-differences appear.  Instead, we recommend a few small, non redundant
-groups, each illustrating one characteristic of the tuples. We call this
-approach \emph{multi-view subset characterization}.
+Universities\}}.  We refer to them as \emph{views}, or \emph{subspaces}.  We
+see that on all the variables, the selection has unusually high values.  This
+shows that regions with many patent applications tend to be richer and have
+solid education systems.  Observe that these views have low dimensionalities:
+each of them illustrates one ``characteristic'' of the selection. In fact, our
+aim is not to show \emph{all} the variables on which differences appear.
+Instead, we seek a few small, non redundant subspaces. We call this approach
+multi-view characterization.
 
-Once we detected the views, we can depict them with visualizations as in
-Figure~\ref{pic:example}. The merits of this approach is hardly disputable, in
+Once we detected the subspaces, we can present them with visualizations as in
+Figure~\ref{pic:example}. The merits of this approach are hardly disputable, in
 particular compared to tables. And yet, analyzing charts takes time and
-training. Not all effects are perceptible, in particular when the views
-contain three dimensions or more. Lastly, charts are simply not accessible to
-visually impaired users. Therefore we propose to exploit a
-different communication channel: we generate natural language descriptions of
-the views. For instance, we could describe the views pictured in
-Figure~\ref{pic:example} as follows:
+training. Besides, not all effects are perceptible, in particular when the
+views contain more than two dimensions. Therefore, we propose to complete the
+visualizations with natural language descri\-ptions, such as the following:
 \begin{quotation}
-    Take a look at~\texttt{Average Income} and \texttt{Year\-ly Production}:
+    ``Take a look at~\texttt{Average Income} and \texttt{Year\-ly Production}:
     your selection has a high value and high concentration. The effect is
     similar and stronger on \texttt{Years in Education} and \texttt{Number of
-    Universities}.
+    Universities}.''
 \end{quotation}
 Note that we \emph{describe} the data, but we do not \emph{interpret} it. The
 latter problem is much harder, and we claim in no way to have solved it. We
@@ -128,7 +127,7 @@ rules.
 
 \section{General problem statement}
 \label{sec:problem}
-Let us now formalize the multi-view characterization problem. We represent our
+Let us now formalize the multi-view characterization prob\-lem. We represent our
 database with a matrix $\rb{D}$, with $M$ columns and $N$ rows.  We model 
 each tuples by an iid. random vector  $\rb{x}_n = (x^1_n, \dots, x^M_n)^\top$,
 and each column by  $\rb{x}^{m}= (x^m_1, \dots, x^m_N)^\top$.
@@ -203,7 +202,7 @@ objective function.
     \label{tab:dissim}
 \end{table*}
 
-Measuring redundancy between column is not straightforward, as this notion is
+Measuring redundancy between columns is not straightforward, as this notion is
 partially subjective. In our model, we exploit statistical dependency: if two
 sets of columns are tightly correlated, then there is a high chance that they
 describe the same property of the ``real world''.  Oppositely, if they are
@@ -264,7 +263,7 @@ $\mf{S}$.
   \label{pic:zigdis}
 \end{figure}
 
-Let us begin with the dissimilarity~$\mf{D}$. As mentioned previously, we could
+Let us begin with the dissimilarity~$\mf{D}$. As mentioned pre\-vious\-ly, we could
 borrow any general divergence measure from the statistics literature, such as
 the KL-divergence. However, these measurements operate as ``black boxes'': they
 describe the intensity of the differences, but they do not explain how the
@@ -274,7 +273,7 @@ mass dissimilarity measure.
 
 The idea behind our dissimilarity measure is to compute several simple,
 interpretable indicators of difference, called \textbf{Zig-Components}, and
-aggregate them in a single composite score, the Zig-Dissimilarity.  Consider
+aggregate them in a single compo\-site score, the Zig-Dissimilarity.  Consider
 for instance two sets of tuples $\rb{V}_t$ and $\rb{V}_{\nott}$ with $V$
 columns. If these subsets have the same average for every column, then they
 probably come from the same distribution. Oppositely, if the averages are
@@ -304,13 +303,13 @@ Section~\ref{sec:validation}).  A majority, but not all of them are normalized
 and vary between -1 and 1. None of these functions are symmetric, and most of
 them change sign according to the direction of the underlying effect.
 
-Observe that Ziggy computes univariate, but also bivariate components: in this
+Observe that Ziggy computes univariate, but also bi\-va\-riate components: in this
 case it compares columns by pairs. Our motivation is to check which
 correlations are present in $\bf{V}_t$ and not in $\rb{V}_{\nott}$, or more
 generally which correlations are either strengthened or weakened across the
 subsets. In the discrete case, we substitute the correlation coefficient by
 Cram\'er' s V.  This function also measures the associations between two
-variables, and it varies similarly between 0 and 1~\cite{cohen1977statistical}.
+variables, and it varies similarly between 0 and~1~\cite{cohen1977statistical}.
 Its value is $\sqrt{\chi^2/(N(\min(|\bf{d}_t|,|\bf{d}_{\nott}|) - 1))}$, where
 $\chi^2$ is Pearson's $\chi^2$ statistic, and $|\bf{d}_t|,|\bf{d}_{\nott}|$ are
 the number of distinct values in $\bf{d}_t$ and $\bf{d}_{\nott}$ respectively.
@@ -325,7 +324,7 @@ of all the differences.
 
 \begin{definition}
     Let $z_1, \ldots, z_Z$ represent a set of normalized absolute values of
-    zig-components, and $w_1, \ldots, w_Z$ a set of user-defined weights.  We
+    zig-components, and $w_1, \ldots, w_Z$ a set of weights.  We
     define the Zig-Dissimilarity as follows: 
     \begin{equation}
         \mf{D}_{Zig}(\rb{V}_t, \rb{V}_{\nott}) 
@@ -334,7 +333,6 @@ of all the differences.
 \end{definition}
 We insist that the Zig-Components must be normalized before the aggregation.
 In the general case, we cannot assume that the scores are commensurate.
-
 The aim of the weights $w_k$ is to balance the effects across column types. For
 instance, we measure two components for the numerical columns, and only one for
 categorical data.  Thus, we set $w_k = 1/2$ for the former and $w_k = 1$
@@ -349,24 +347,23 @@ are harder to convey and understand in natural language.  Second, the number of
 relationships to be inspected grows exponentially with the dimensionality of
 the Zig-Component. This hurts Ziggy's runtime, and leads to much longer
 outputs. We will show in Section~\ref{sec:experiments} that this restriction
-has little practical effect on the Ziggy's views.
+has little practical effect on Ziggy's accuracy.
 
 
 \subsection{Dependency Measure}
 \label{sec:dependency}
 \begin{figure}
   \centering
-  \includegraphics[width=0.6\columnwidth]{Figures/Redundancy}
+  \includegraphics[width=0.7\columnwidth]{Figures/Redundancy}
   \caption{Illustration of Ziggy's redundancy measure. Vertices represent
-  column, edges represent pairwise dependency.}
+  columns, edges represent pairwise dependencies.}
   \label{pic:redundanct}
 \end{figure}
 We now present two instantiations for the measure of redundancy,
 $\mf{S}_{hard}$ and $\mf{S}_{soft}$.  Both measures are a variant of the same
 principle, and we will refer to them collectively as the Zig-Dissimilarity
-$\mf{S}_{Zig}$. Here again, the main idea is to aggregate several simple
-interpretable indicators, such as those that users can find in statistics
-textbooks.
+$\mf{S}_{Zig}$. Here again, our motivation is to aggregate several simple
+interpretable indicators.
 
 Let  $\rb{V}$ and $\rb{V}'$ represent two views. We compute the Zig-Dependency
 in two steps. First, we compute the pairwise dependency $\mf{s}(\rb{d},
@@ -374,6 +371,7 @@ in two steps. First, we compute the pairwise dependency $\mf{s}(\rb{d},
 of $\rb{V}'$, as shown in Figure~\ref{pic:redundanct}. The measure $\mf{s}$ is
 a convenience function, which allows us to combine different types of
 variables:
+
 \begin{equation}
     \mf{s}(\rb{d}, \rb{d}')= \begin{cases}
         r(\rb{d}, \rb{d}')\ \text{if $\bf{d}, \bf{d}'$ are continuous (correlation)}\\
@@ -399,7 +397,7 @@ the views. It is not necessarily so for $\mf{S}_{soft}$. Thus
 $\mf{S}_{hard}$ leads to less redundancy, while $\mf{S}_{soft}$ is more
 flexible. We will demonstrate these effect in our Experiments section.
 
-Finally, observe that our choice for $\mf{S}$ is computationally efficient: we
+Finally, observe that our choice for $\mf{S}$ is computatio\-nal\-ly efficient: we
 get the pairwise correlations ``for free'', because we need to compute them
 anyway to obtain the Zig-Components $\mf{z}_{\chi}$ and $\mf{z}_r$.
 
@@ -415,8 +413,8 @@ constraining the latter, as exposed in Equation~\ref{prob2}.
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.8\columnwidth]{Figures/Greedy}
-  \caption{Illustration of Ziggy's greedy view composition algorithm, with
+  \includegraphics[width=0.85\columnwidth]{Figures/Greedy}
+  \caption{Ziggy's greedy view composition algorithm, with
   $i=3$ and $D=3$. The grey edges represent the
   amount of redundancy added by each candidate. The blue edges represent the
   amount of dissimilarity added by each candidate.}
@@ -454,9 +452,9 @@ constraining the latter, as exposed in Equation~\ref{prob2}.
 
 Once the user has provided a selection of tuples, Ziggy performs two steps.
 First, it computes the Zig-Components, for each column and each pair of columns
-in the database. Then, it composes the views greedily: it picks the
-co\-lumns associated with the highest components one by one, while ensuring
-that the dependency threshold $L$ is not breached.
+in the database. Then, it composes the views greedily: it successively picks
+the co\-lumns associated with the highest components, while ensuring that the
+dependency threshold $L$ is not breached.
 
 The first step is straightforwards, but it is also by far the most time
 consuming. We discuss in Section~\ref{sec:optimization} how to optimize it.
@@ -501,18 +499,18 @@ Therefore we must update $\Delta\mf{D}$ after each step.
 
 If we use the redundancy measure $\mf{S}_{hard}$, then we can avoid computing $
 \Delta\mf{S}$ altogether: Ziggy can discard the redundant candidates before it
-starts building the view.  Consider a candidate column $d$, and let
+starts building the view.  Consider a candidate column $\bf{d}$, and let
 $\rb{V}^{1..i-1}$ describe the union of all previously built views. If
-$\mf{S}_{hard} (\rb{V}^{1..i-1}, d) > L$, then the column is not exploitable:
+$\mf{S}_{hard} (\rb{V}^{1..i-1}, \bf{d}) > L$, then the column is not exploitable:
 adding it to the current view $\rb{V}^{i}$ will breach the threshold,
 regardless of $\rb{V}^{i}$'s current state.  Conversely, if we have
-$\mf{S}_{hard}(\rb{V}^{1..i-1}, d) < L$, then candidate is ``safe'', it will
+$\mf{S}_{hard}(\rb{V}^{1..i-1},  \bf{d}) < L$, then candidate is ``safe'', it will
 never breach the dependency threshold.  Thus Ziggy, builds the
-view in two separate steps: first it eliminates the redundant columns (i.e.,
-those for which $\mf{S}_{hard} (\rb{V}^{1..i-1}, d) > L$), then it selects the
+view in two se\-parate steps: first it eliminates the redundant columns (i.e.,
+those for which $\mf{S}_{hard} (\rb{V}^{1..i-1},  \bf{d}) > L$), then it selects the
 top $D$ candidates. 
 
-Finally, observe that our greedy algorithm is not exact, but it runs
+To conclude, our greedy algorithm is not exact, but it runs
 in~$\mathcal{O}(KMD)$. Thanks to this heuristic, we avoid an exhaustive search
 of $\binom{M}{D}$ possible possible view combinations, which would lead to an
 unpractical $\mathcal{O}(KM^D)$ runtime.
@@ -521,7 +519,7 @@ unpractical $\mathcal{O}(KM^D)$ runtime.
 \begin{table*}[t!]
     \centering
   \rowcolors{2}{gray!25}{white}
-    \begin{tabular}{c c c c p{8cm}}
+    \begin{tabular}{c c c c p{8.5cm}}
     \rowcolor{gray!50}
       \hline
       Property & Type 1 & Type 2 & Test Statistic & Comment\\
@@ -548,13 +546,13 @@ same notations as in Table~\ref{tab:dissim}.}
 \begin{figure}[t!]
     \centering
     \begin{subfigure}[b]{\columnwidth}
-    \includegraphics[width=\textwidth]{Figures/Staging}
+    \includegraphics[width=0.9\textwidth]{Figures/Staging}
     \caption{Computing $\mf{z}_\mu$ without staging.}
     \label{pic:withoutstag}
     \end{subfigure}
 
     \begin{subfigure}[b]{\columnwidth}
-        \includegraphics[width=\textwidth]{Figures/Staging2}
+        \includegraphics[width=0.9\textwidth]{Figures/Staging2}
     \caption{Computing  $\mf{z}_\mu$  with staging.}
     \label{pic:withstag}
     \end{subfigure}
@@ -570,15 +568,16 @@ the database. In the worst case it runs in $\mathcal{O}(NM^2)$, because
 we need to compute and compare every possible pair of correlations in
 $\rb{V}_t$ and $\rb{V}_{\nott}$ for the scores $\mf{z}_r$ and $\mf{z}_V$.
 
-Our idea is to prepare some computations offline, before the user starts
-submitting queries.  Let us focus on the Zig-Component $\mf{z}_\mu$, which
-reports the difference $(\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott})/{s_{\nott}}$,
-for a given column $\bf{d}$ of the database.  Figure~\ref{pic:withoutstag}
-presents the naive method to compute this component.  As soon as our user
-submits a selection, we compute the average $\bar{\bf{d}}_t$ for those tuples,
-the values $\bar{\bf{d}}_{\nott}$ and $s_{\nott}$ for the rest of the database,
-and we apply the formula $(\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott})/{s_{\nott}}$
-directly. Thus, we read the whole column.
+To support this workload, we prepare some computations offline, before the user
+starts submitting queries.  Let us focus on the Zig-Component $\mf{z}_\mu$,
+which reports the difference $(\bar{\bf{d}}_t -
+\bar{\bf{d}}_{\nott})/{s_{\nott}}$, for a given column $\bf{d}$ of the
+database.  Figure~\ref{pic:withoutstag} presents the naive method to compute
+this component.  As soon as our user submits a selection, we compute the
+average $\bar{\bf{d}}_t$ for those tuples, the values $\bar{\bf{d}}_{\nott}$
+and $s_{\nott}$ for the rest of the database, and we apply the formula
+$(\bar{\bf{d}}_t - \bar{\bf{d}}_{\nott})/{s_{\nott}}$ directly. Thus, we read
+the whole column.
 
 Figure~\ref{pic:withstag} illustrates our staging strategy. Offline, we compute
 the mean $\bar{\bf{d}}$ and the standard deviation $s$ for the whole
@@ -616,27 +615,26 @@ values, and compute $\mf{z}_\chi$ and $\mf{z}_V$.
 \section{Model Validation}
 \label{sec:validation}
 We now focus on the following problem: for a given view $\rb{V}$, how
-\emph{significant} is the Zig-Dissimilarity $D = \mf{D}( \rb{V}_t  ;
+\emph{significant} is the Zig-Dissimilarity $S = \mf{D}( \rb{V}_t  ;
 \rb{V}_{\overline{t}})$? A high value may indicate that $\rb{V}_t$ and
 $\rb{V}_{\overline{t}}$ come from two different distributions.  But it could
-also be caused by chance. How confident are we of this result? Answering this
-question has two practical uses. First, a confidence score can help us decide
-when to stop generating views. Second, it helps users interpret Ziggy's results.
+also be caused by chance. How confident are we of this result? Confidence
+scores help Ziggy decide which Zig-Components to show, and it helps users
+interpret its results.
 
-The statistics literature proposes a completely ge\-ne\-ric way to solve
-this problem: permutation testing. This methods works with the Zig-Dependency,
-but it can also handle other divergence measures. The main idea is to
-repeatedly shuffle the rows of $D^i$, without modifying $\rb{t}$. Thus, the
-tuples are randomly affected to $\rb{V}_t$ and $\rb{V}_{\overline{t}}$. We
-then observe how the dissimilarity $D$ varies: if the permutations have no
-effect on $D$, then there is high chance that the dissimilarity was caused by
-chance.  Oppositely, if $D$ is very sensitive,
-then we have a high confidence in our result. We refer the interested
-reader to Wasserman~\cite{wasserman2013all} for more details.
+The statistics literature proposes a completely ge\-ne\-ric way to solve this
+problem: permutation testing. This methods works with the Zig-Dissimilarity, but
+it can also handle other divergence measures. In consists in repeatedly
+shuffling the rows of $\rb{V}$, such that tuples are randomly affected to $\rb{V}_t$
+or $\rb{V}_{\overline{t}}$. We then observe how the dissimilarity $S$ varies:
+if the permutations have no effect on $S$, then there is high chance that the
+dissimilarity was caused by chance.  Oppositely, if $S$ is very sensitive, then
+we have a high confidence in our result. We refer the interested reader to
+Wasserman~\cite{wasserman2013all} for more details.
 
 Permutation testing offers plenty of advantages, but shuffling the rows is
-computationally heavy. In our implementation, we used an alternative approach.
-The main idea is to use the composite nature of the Zig-Dissimilarity, and test
+computationally heavy. In our implementation, we used an alternative approach:
+we exploit the composite nature of the Zig-Dissimilarity, and test
 each Zig-Component individually. We then aggregate these scores in a synthetic
 confidence indicator. Therefore we do not test the Zig-Dissimilarity directly -
 instead we focus on its underlying effects.  This method is much lighter
@@ -653,7 +651,7 @@ conservative approach~\cite{wasserman2013all}.
 \label{sec:reporting}
 \begin{figure}[t!]
   \centering
-  \includegraphics[width=0.95\columnwidth]{Figures/ReportGeneration}
+  \includegraphics[width=\columnwidth]{Figures/ReportGeneration}
   \caption{Ziggy's report generation pipeline.}
   \label{pic:reportpipeline}
 \end{figure}
@@ -665,10 +663,10 @@ comprising a few sentences and several charts. The aim of the text is to give a
 general presentation of how the tuples differ from the rest of the data. The
 charts let users inspect the details.  Figure~\ref{pic:reportpipeline}
 illustrates how Ziggy proceeds. First, it gathers all the Zig-Components
-associated with each columns of the database. It then generates a short
+associated with each columns of the database. It then ge\-nerates a short
 description for each component using hand-written rules such as those
-presented in the first column of Table~\ref{tab:handwritten}. It also evaluates
-each component, with a scale of three grades: ``weak'', ``neutral'', and
+presented in the first column of Table~\ref{tab:handwritten}. It also rates 
+each component, with three possible grades: ``weak'', ``neutral'', and
 ``exceptional''. These grades are based on both the values of the components
 and their confidence, as illustrated in Table~\ref{tab:handwritten}.  To set
 the thresholds, we took inspiration from classic statistics
@@ -683,13 +681,13 @@ the same components. It then generates one sentence for each group, such that
 each sentence has the same structure: \texttt{on [column\_names], the
 [zig-component] [label]}. If several components are involved, as in
 Figure~\ref{pic:reportpipeline}, the Ziggy enumerates all the pairs
-\texttt{[zig-component] [label]}. At this point, the text produced is
-understandable, but it is also highly redundant and possibly grammatically
-incorrect. During the last phase, Ziggy rewrites the text a set of handwritten
-rules. Such rules include inserting connectors (e.g., ``Additionally'',
-``Finally''), using random synonyms (e.g., ``the tuples'', ``the selection'',
-``your data'') or replacing wider chunks of text (e.g., ``has a lower
-variance'' by ``spreads more widely'').
+\texttt{[zig-component] [label]}, separated by \texttt{and}. At this point, the
+text produced is understandable, but it is also highly redundant and possibly
+grammatically incorrect. During the last phase, Ziggy rewrites it a set of
+handwritten rules. Such rules include inserting connectors (e.g.,
+``Additionally'', ``Finally''), using random synonyms (e.g., ``the tuples'',
+``the selection'', ``your data'') or replacing wider chunks (e.g., ``has a
+lower variance'' by ``spreads more widely'').
 
 By default, Ziggy only produces visualizations for the variables associated
 with exceptional components. It plots the remainder on demand. To determine
@@ -725,25 +723,24 @@ generate, the width of the views $D$, and the dependency threshold $L$.
 
 \textbf{Number of Views K.} When should we stop producing views? We propose to
 generate as many views as possible, and delegate the final decision to the
-users - after all, we have little idea about what they seeking. In practice, we
-do so lazily: we start with a small selection of views (e.g., as many as
-the display can contain), and we generate the remainder on demand, for instance
-with a ``show me more'' button.  In our experience, the number of views stays
-manageable because the algorithm is blocked by the redundancy constraint: after
-a certain number of views, Ziggy finds no more columns to exploit. If the views
-have a low confidence (as detailed in Section~\ref{sec:validation}), then Ziggy
-issues a warning.
+users - after all, we have little idea about what they are seeking. In
+practice, we do so lazily: we start with a small selection of views (e.g., as
+many as the display can contain), and we generate the remainder on demand, for
+instance with a ``show me more'' button.  In our experience, the number of
+views stays manageable because the algorithm is blocked by the redundancy
+constraint: after a certain number of views, Ziggy finds no more columns to
+exploit.
 
-\textbf{Size of the Views D.} In our implementation, we set this parameter in an adaptive
-fashion, using a method presented by Zhu and Ghodsi~\cite{zhu2006automatic}.
-The main idea is the following. When building a view, we keep track of the
-gains $\Delta\mf{D}_d$ induced by each column $d$.  We then detect change
-points in the sequence (e.g., ``jumps'' or ``elbows'').  If we observe such a
-behavior, we truncate the current view and start a new one.  The advantage of
-this method is that $D$ can adapt to each subspace. However, it is
-only a heuristic. Fortunately, inaccuracies have little consequence in
-practice: if the dependency constraint is weak, then the excluded columns are
-simply pushed to the next view.
+\textbf{Size of the Views D.} In our implementation, we set this parameter in
+an adaptive fashion, using a method presented by Zhu and
+Ghodsi~\cite{zhu2006automatic}.  We summarize it as following. When building
+a view, we keep track of the gains $\Delta\mf{D}_d$ induced by each column $d$.
+We then detect change points in the sequence (e.g., ``jumps'' or ``elbows'').
+If we observe such a behavior, we truncate the current view and start a new
+one.  The advantage of this method is that $D$ can adapt to each subspace.
+However, it is only a heuristic. Fortunately, inaccuracies have little
+consequence in practice: if the dependency constraint is weak, then the
+excluded columns are simply pushed to the next view.
 
 \textbf{Dependency threshold L.} Admittedly, there is no optimal way to set
 this parameter: it depends entirely on the user and the exploration context. By
@@ -752,9 +749,9 @@ enforces that the views are non-overlapping, but it adds no other constraint -
 we see this as a safe option.
 
 \textbf{Zig-Components.} Previously, we proposed several Zig-Components, in
-order to capture a wide range of effects. In practice, nothing forces to use
+order to capture a wide range of effects. Nothing forces to use
 them all. For instance, a user interested in quick and concise results may
-prefer to ignore the bivariate components.
+prefer to ignore bivariate components.
 
 
 \section{Use Case}
@@ -765,7 +762,8 @@ prefer to ignore the bivariate components.
     \small
     \begin{tabular}{p{4cm} c c c} 
         \hline
-        \multirow{3}{*}{Columns}  & Except. & Weak  & \multirow{3}{*}{Score}\\
+        \multirow{3}{*}{Columns}  & Except. & Weak  &
+        \multirow{3}{*}{$\mf{D}_{Zig}$}\\
                                   & Comp.   & Comp.& \\
                                   & (\%)    & (\%)& \\
         \hline
@@ -829,14 +827,14 @@ prefer to ignore the bivariate components.
         Gross\_Domestic\_Product&&&\\
         \hline
     \end{tabular}
-    \caption{Detail of Ziggy's views, sorted by decreasing order of score. The
-    two middle columns indicate the proportion of Zig-Components considered as
+    \caption{Detail of Ziggy's views, by decreasing order of dissimilarity. The
+    two middle columns indicate the proportion of Zig-Components marked  as
 Exceptional and Weak.}
     \label{tab:ziggysviews}
 \end{table}
 \begin{figure*}[!ht]
   \centering
-  \includegraphics[width=2\columnwidth]{Figures/UseCase}
+  \includegraphics[width=2.05\columnwidth]{Figures/UseCase}
   \caption{Ziggy's explanations for Views 1 and 4}
   \label{pic:zigdetail}
 \end{figure*}
@@ -868,13 +866,13 @@ pa\-tents). Likewise, we expected some relationship between education and
 innovation (views 2, 6 and 10). However, some effects are less straightforward.
 How does \texttt{Employees working very long\- hours} impact innovation? Are
 patents produced at work, or during hobby time? Similarly, how do our
-innovative regions behave on the variable~\texttt{Job security}?
+regions behave on the variable~\texttt{Job security}?
 
 Figure~\ref{pic:zigdetail} presents Ziggy's explanations for two views. To
 obtain this figure, we made only two edits: we removed some plots to save
 space, and we inserted references to the charts in the text. Consequently, the
 figure illustrates accurately what Ziggy's users would obtain. The first view
-reflects the fact that innovative regions also have a high income. Ziggy
+reflects the fact that innovative regions usually offer high incomes. Ziggy
 expresses this through its comments about the
 variable~\texttt{Personal earnings}, but also through the last chart. As it
 points out, there is a correlation between patent applications and income, but
@@ -884,7 +882,7 @@ regions are relatively rich, regardless of their patent statistics.
 
 The second view offers a different perspective. The first and third charts show
 that innovative regions tend to be safer, but the relationship is not
-straightforward. Ziggy points out that these regions have less extreme values
+straightforward. Ziggy shows that these regions have less extreme values
 on \texttt{Assault rate}, but the mean is similar. Also, the expected
 correlation between \texttt{Assault rate} and \texttt{Homicide rate} is
 inverted. This reflects the fact that assaults do exist in our innovative
@@ -892,11 +890,11 @@ regions, but little of them actually lead to a homicide. The last chart is more
 puzzling: normally, there exists no relationship between \texttt{Assault rate}
 and \texttt{Current ac\-count balance}. And indeed, we expect these variables
 to be independent, because they describe completely different topics. Yet,
-in the innovative regions, a clear correlation appears. How can we interpret
+in our regions, a clear correlation appears. How can we interpret
 this effect? If this dependence completely spurious? Are those
 variables cofounded by a third, hidden variable? Or maybe sane public accounts
-causes anger among inventors? As implausible as this last hypothesis may seem, this
-chart gives us no way to discard it. We leave the question open for future
+causes anger among inventors? As implausible as this last hypothesis may seem,
+the chart gives us no way to discard it. We leave the question open for future
 investigations.
 
 \section{Experiments}
@@ -945,10 +943,10 @@ algorithm. We used the authors' implementation.  We expect this approach to be
 both fast and accurate.
 
 Our second baseline is \texttt{Clique}, inspired by the pattern mining
-literature~\cite{xie2010max}. The idea is to build a graph inside which the
+literature~\cite{xie2010max}. The algorithm builds a graph inside which the
 weight of each edge $(i,j)$ represents the statistical dependency between the
 pair of columns $i,j$ and the target variable (again, we measure dependency
-with the mutual information) . To obtain $K$ subspaces with at most $N$
+with the mutual information). To obtain $K$ subspaces with at most $N$
 variables, we remove all the edges except the $K' > K$ strongest, and detect
 cliques of at most $N$ nodes in the remaining graph. By default, we set $K' =
 2\cdot K$. To detect cliques, we used the \texttt{igraph} software package. We
@@ -959,7 +957,7 @@ selection literature~\cite{guyon2003introduction}. This algorithm trains 5-NN
 classifiers with increasingly large sets of variables. First, it tests each
 variable, and it keeps the top $K$. Then, it tests combinations of two columns.
 The process is repeated until the views reach $D$ dimensions. We chose 5-NN
-because it is the algorithm we use to evaluate the views. Therefore, we
+because it is the same algorithm we use to evaluate the views. Therefore, we
 optimize exactly what we measure. We expect this approach to be accurate, but
 also very slow. Thus, we only use it as a ``gold standard'' for our experiments
 with real data.
@@ -1030,9 +1028,8 @@ algorithms we present are single-threaded. The operating system is Fedora 16.
 \subsection{Synthetic Data}
 \label{sec:synthexp}
 
-
 In this set of experiments, we benchmark our algorithms in a synthetic
-environment. Since we know the structure of the data in advance, we can tune
+environment. Since we know the structure of the data, we can tune
 the competitors optimally. For instance, if we generate a dataset with 3
 subspaces of 5 columns, then we set $K=3$ and $D=5$. We must however report
 that \texttt{4S} tunes itself: it computes how many subspaces to generate, and
@@ -1092,15 +1089,14 @@ overhead costs. The figure confirms this estimation.
 \textbf{Diversity.} Figure~\ref{pic:synthvariety} presents the number of
 distinct co\-lumns mentioned in the views. In the leftmost chart, we compare
 four competitors, varying the width of the subspaces. We notice two distinct
-groups of columns. The approaches \texttt{Ziggy-Hard} and \texttt{4S} offer a
-very high diversity, because they enforce that no columns is shared among
+groups of algorithms. The approaches \texttt{Ziggy-Hard} and \texttt{4S} offer
+a very high diversity, because they enforce that no column is shared among
 subspaces. The approaches \texttt{Claude} and \texttt{Ziggy-Soft} offer much
 less variety. The rightmost figure illustrates the effect of the dependency
-threshold. In the Hard case, it has no apparent effect because the views are
-completely disjoint anyway (the threshold  does separate the correlated
-columns, but this does not influence our metric). In the Soft case, we see that
-our deduplication strategy works" a lower threshold forces Ziggy to introduce
-variety.
+threshold. In the Hard case, it has no appa\-rent effect because the views are
+completely disjoint anyway (the threshold does decorrelate the views, but this
+does not influence our metric). In the Soft case, we see that our deduplication
+strategy works: a lower threshold forces Ziggy to introduce variety.
 
 \begin{figure}[t!]
   \centering
@@ -1114,56 +1110,55 @@ variety.
 
 \begin{figure*}[!ht]
   \centering
-  \includegraphics[width=0.8\textwidth]{Plots/Real-Accuracy}
+  \includegraphics[width=0.75\textwidth]{Plots/Real-Accuracy}
   \caption{Quality of the views. The points represent median scores, the bars
   represent the lowest and greatest scores.}
   \label{pic:realquali}
 \end{figure*}
 \begin{figure*}[!ht]
   \centering
-  \includegraphics[width=0.8\textwidth]{Plots/Real-Diversity}
+  \includegraphics[width=0.75\textwidth]{Plots/Real-Diversity}
   \caption{Diversity of the views. The \texttt{X} mark indicates that we 
   truncated the column.}
   \label{pic:realdiversity}
 \end{figure*}
 \begin{figure*}[!ht]
   \centering
-  \includegraphics[width=0.8\textwidth]{Plots/Real-Runtime}
+  \includegraphics[width=0.75\textwidth]{Plots/Real-Runtime}
   \caption{Runtime. The \texttt{X} mark indicates that we truncated the column.}
   \label{pic:realruntime}
 \end{figure*}
 We now presents our experiments on real data from the UCI Repository. We
-introduce the algorithm \texttt{Wrap-5NN}, which we use as ``gold standard'',
+use the algorithm \texttt{Wrap-5NN} as ``gold standard'',
 since it optimizes precisely the metric we report. To set the number and width
 of the subspaces, we rely on \texttt{4S}. Table~\ref{tab:datasets} describes the
 datasets and our settings. Because all the competitors have the same
 parameters, the comparison is fair.
 
 \textbf{Accuracy.} Figure~\ref{pic:realquali} illustrates the quality of the
-views for each algorithm. We observe that \texttt{Wrap 5-NN} comes always
-first. It is followed by \texttt{Ziggy-Soft},\texttt{Claude} and
-\texttt{Ziggy-Hard}, often closely (although \texttt{Crime} is a striking
-counter-example) and in different orders. The unsupervised
-\texttt{4S} follows in most cases, tailed by \texttt{Clique}. Here again, we
-conclude that Ziggy's performance is largely comparable to good feature
-selection algorithms. However, we observe that \texttt{Ziggy-Hard} is often
-below \texttt{Ziggy-Soft}, the most extreme case being the \texttt{LetterRecog}
-set.  This is a consequence of its diversity. In the synthetic case, Ziggy had
-several equally good subspaces to chose from. In the last three datasets, it
-seems that some subspaces are better than others, and therefore non-redundancy
-induces an accuracy loss (observe that \texttt{4S} suffers from the same
-problem).
+views for each algorithm. We observe that \texttt{Wrap 5-NN} always comes
+first. It is closely followed by \texttt{Ziggy-Soft},\texttt{Claude} and
+\texttt{Ziggy-Hard},  in different orders (although \texttt{Crime} is a
+striking counter-example). The unsupervised \texttt{4S} follows in most cases,
+tailed by \texttt{Clique}. Here again, we conclude that Ziggy's performance is
+largely comparable to good feature selection algorithms. However, we observe
+that \texttt{Ziggy-Hard} is often below \texttt{Ziggy-Soft}, the most extreme
+case being the \texttt{LetterRecog} set.  This is a consequence of
+\texttt{Ziggy-Hard}'s diversity. In the synthetic case, it had several equally
+good subspaces to chose from. In the last three datasets, it seems that some
+subspaces are better than others, and therefore non-redundancy induces an
+accuracy loss (observe that \texttt{4S} suffers from the same problem).
 
 \textbf{Diversity.} Figure~\ref{pic:realdiversity} presents the diversity
 results.  As with synthetic data, we observe that \texttt{4S} and
-\texttt{Ziggy-Hard} dominate the other algorithms, in particular with wide
-datasets such as \texttt{Crime} and \texttt{MuskMolecules}. The algorithms
+\texttt{Ziggy-Hard} dominate the other algorithms, particularly with wide
+tables such as \texttt{Crime} and \texttt{MuskMolecules}. The algorithms
 \texttt{Ziggy-Soft} and \texttt{Clique} follow, then \texttt{Claude} and
 \texttt{Wrap-5NN} comes last - which we expected since they mostly target
 accuracy. This chart, in conjunction with Figure~\ref{pic:realquali}, shows
 that the algorithms which generate the best F1 rarely generate the best
 diversity, and reciprocally. This motivates our choice to offer both
-$\mf{S}_{Hard}$ and $\mf{S}_{Soft}$.
+$\mf{S}_{hard}$ and $\mf{S}_{soft}$.
 
 \textbf{Runtime} We present the runtime of our algorithms in
 Figure~\ref{pic:realruntime}. The results are consistent with our previous
@@ -1208,7 +1203,7 @@ sets). None of these works discuss how to report results.
 \textbf{Contrast Mining.} Contrast mining is a similar task, but in a pattern
 mining context: the aim is to differentiate two or more populations by
 identifying patterns which are present (e.g., have a high support) in one
-population and not the
+population but not in the
 other~\cite{vreeken2007characterising,webb2008detecting}. This line of work is
 related but orthogonal, because we deal with neither itemsets nor patterns.
 Notably, Loekito and Bailey introduced a  method to identify discriminative 
@@ -1218,13 +1213,13 @@ contrasts'' for categorical data, a close but different task
 \textbf{Feature Selection.} As noted in Section~\ref{sec:experiments}, our work
 is intimately related to feature selection. Feature selection seeks predictive
 variables for a classification or regression task~\cite{guyon2003introduction}.
-We can map this task to our problem by treating the user's selection as a
-column to be predicted. The main difference is that feature selection seeks
+We can map this task to our problem by trea\-ting the user's selection as a
+column to be predicted. The main difference is that feature selection targets
 statistical accuracy, while we target interpretation. Thus, most feature
 selection algorithms seek one optimal set of variables, while we seek several
-small sets of variables. Also, they optimize class separability,
-while we are interested in any difference in distribution. Nevertheless, we
-acknowledge the similarity between our work and some feature selection
+small sets of variables. Also, feature selection tends to optimize class
+separability, while we are interested in any difference in distribution.
+Nevertheless, we acknowledge the similarity between our work and some
 algorithms, and compare them directly in Section~\ref{sec:experiments}.
 
 \textbf{Data Exploration} Recent works in data exploration have tackled
@@ -1236,7 +1231,7 @@ the general distribution of the selection, independently of any sub-grouping.
 Li and Jagadish~\cite{li2014constructing} tackle the counterpart of our
 problem: they describe how to issue queries in natural language. Lloyd et al.'s
 automated statistician~\cite{Lloyd2014ABCD} describes regression models in
-natural language. These approaches are somewhat complementary to ours, and
+natural language. These approaches are somewhat com\-ple\-mentary to ours, and
 there would be much to gain by combining them.
 
 

@@ -8,6 +8,9 @@ plot_view <- function(col_set, dataset = data, in_selection = selection,
    cat("Ploting for types:")
    print(types)
 
+   if (nrow(data) > 100)
+      data <- data[sample(100, 1:nrow(data), replace = F),]
+
 
    dataset$in_selection <- ifelse(in_selection, 'Inside Selection', 'Outside Selection')
 
@@ -67,7 +70,7 @@ plot_view <- function(col_set, dataset = data, in_selection = selection,
                                          y = col_set[2],
                                          fill = 'in_selection',
                                          color = 'in_selection')) +
-            geom_point(size=1, alpha=0.7) +
+            geom_point(size=1) +
             geom_smooth(method = lm, size = 1, se = F) +
             annotate("text",  x=Inf, y = Inf,
                      label = paste0("Fig. ",fig_label),

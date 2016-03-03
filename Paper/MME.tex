@@ -46,21 +46,21 @@
 \title{``Hey Ziggy, What Am I Looking At?''\\
 Describing Tuples for Data Explorers}
 
-%\numberofauthors{3}
-%\author{
-%\alignauthor
-%Thibault Sellam\\
-%       \affaddr{CWI\\Amsterdam, the Netherlands}\\
-%       \email{thibault.sellam@cwi.nl}
-%\alignauthor
-%Emmanuel M\"uller\\
-%    \affaddr{HPI\\Potsdam, Germany}\\
-%     \email{emmanuel.mueller@kit.edu}
-%\alignauthor
-%Martin Kersten\\
-%       \affaddr{CWI\\Amsterdam, the Netherlands}\\
-%       \email{martin.kersten@cwi.nl}
-%}
+\numberofauthors{3}
+\author{
+\alignauthor
+Thibault Sellam\\
+       \affaddr{CWI\\Amsterdam, the Netherlands}\\
+       \email{thibault.sellam@cwi.nl}
+\alignauthor
+Emmanuel M\"uller\\
+    \affaddr{HPI\\Potsdam, Germany}\\
+     \email{emmanuel.mueller@kit.edu}
+\alignauthor
+Martin Kersten\\
+       \affaddr{CWI\\Amsterdam, the Netherlands}\\
+       \email{martin.kersten@cwi.nl}
+}
 
 \maketitle
 
@@ -70,14 +70,14 @@ Typically, explorers operate by trial and error: they submit a query, study the
 result, and refine their query subsequently. In this paper, we investigate how
 to help them understand their query results. In particular, we focus on medium
 to high dimension spaces: if the database contains dozens or hundreds of
-columns, which variables should they inspect? Our idea is to detect subspaces
-inside which the users' selection has an unusual distribution compared to the
-rest of the database. From this idea, we built Ziggy, a tuple description
-engine. Ziggy can detect informative subspaces, and it can explain why it
-recommends them with natural language and visualizations. Thus it engages users
-in a veritable conversation with their data exploration tool.  We first present
-the general problem of characterizing tuples with multiple views. We then
-describe Ziggy in detail. Finally, we showcase our system with a use case and
+columns, which variables should they inspect? We propose to detect subspaces
+in which the users' selection has an unusual distribution compared to the rest
+of the database. From this idea, we built Ziggy, a tuple description engine.
+Ziggy can detect informative subspaces, and it can explain why it recommends
+them with natural language and visualizations. Thus it engages users in a
+veritable conversation with their data exploration tool.  We first present the
+general problem of characteri\-zing tuples with multiple views. We then describe
+Ziggy in detail. Finally, we showcase our system with a real-life use case, and
 evaluate it with a wide range of real and synthetic data.
 \end{abstract}
 
@@ -86,6 +86,9 @@ evaluate it with a wide range of real and synthetic data.
 \keywords{Data exploration, subspace search, data description}
 
 \input{Content}
+
+\section{Acknowledgements}
+This publication was supported by the Dutch national program COMMIT.
 
 \bibliographystyle{abbrv}
 \balance

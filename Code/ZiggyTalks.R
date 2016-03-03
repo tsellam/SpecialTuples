@@ -550,7 +550,7 @@ ziggy_talk_about <- function(view, zig_scores){
 
             } else {
             cat(ifelse(cap, ' On the columns ', ' on columns '),
-                paste0(col1[1:length(col1 -1)],collapse=', '),
+                paste0(col1[1:length(col1)-1],collapse=', '),
                 ' and ', col1[length(col1)], sep='')
             }
 
