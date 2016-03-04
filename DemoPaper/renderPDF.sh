@@ -14,3 +14,5 @@ echo pdflatex.3 && pdflatex $MAINFILE              </dev/null > .pdflatex.log &&
 echo            && egrep --color -i 'warning|error|written'     .pdflatex.log || \
 cat .pdflatex.log 2>/dev/null && echo
 cat   .bibtex.log 2>/dev/null && echo
+
+cp Ziggy-demo.pdf 1007.pdf

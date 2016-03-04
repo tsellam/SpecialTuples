@@ -416,6 +416,15 @@ selected view}</string>
 				</dict>
 				<key>stroke</key>
 				<dict>
+					<key>Color</key>
+					<dict>
+						<key>b</key>
+						<string>0.8</string>
+						<key>g</key>
+						<string>0.8</string>
+						<key>r</key>
+						<string>0.8</string>
+					</dict>
 					<key>Width</key>
 					<real>0.25</real>
 				</dict>
@@ -477,7 +486,7 @@ selected view}</string>
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2016-03-02 16:48:49 +0000</string>
+	<string>2016-03-03 17:14:00 +0000</string>
 	<key>Modifier</key>
 	<string>Thibault Sellam</string>
 	<key>NotesVisible</key>
@@ -553,7 +562,7 @@ selected view}</string>
 		<key>ExpandedCanvases</key>
 		<array/>
 		<key>Frame</key>
-		<string>{{-2313, -430}, {1490, 1181}}</string>
+		<string>{{0, 0}, {1280, 777}}</string>
 		<key>ListView</key>
 		<true/>
 		<key>OutlineWidth</key>
@@ -567,7 +576,7 @@ selected view}</string>
 		<key>SidebarWidth</key>
 		<integer>119</integer>
 		<key>VisibleRegion</key>
-		<string>{{-145, 0}, {849.36706553741772, 657.5949188475239}}</string>
+		<string>{{-77.999999999999972, 0}, {716.45567674244171, 401.89872326099868}}</string>
 		<key>Zoom</key>
 		<real>1.5800000429153442</real>
 		<key>ZoomValues</key>

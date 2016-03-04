@@ -33,7 +33,7 @@
 
 \begin{document}
 
-\title{Ziggy: A Tuple Characterization Engine for Data Explorers}
+\title{Ziggy: Characterizing Query Results for Data Explorers}
 
 \numberofauthors{2}
 \author{
@@ -54,24 +54,24 @@ Martin Kersten\\
 \thispagestyle{empty}
 
 \begin{abstract}
-Data exploration has received much attention during the last few years. The
-aim is to discover new, interesting queries in a possibly unfamiliar
-database. Typically, explorers operate by trial and error: they write
-a query, inspect the results and refine their specifications accordingly. In this
-demo proposal, we present Ziggy, a system to help them understand the
-results of their queries. Ziggy's aim is to complete an existing exploration system: it
-assumes that users already have a query, but they do not know what is
-interesting about it. To assist them, it detects characteristic views,
-that is, small sets of columns in which the tuples in the results are different
-from that in the rest of the database. Thanks to these views, our explorers
-can understand what makes their query unique and ensure that they
-considered everything their query had to offer.
+Data exploration has received much attention during the last few years. The aim
+is to learn interesting new facts from a possibly unfamiliar database.
+Typically, explorers operate by trial and error: they write a query, inspect
+the results and refine their specifications accordingly. In this demo proposal,
+we present Ziggy, a system to help them understand their query results. Ziggy's
+aim is to complement an existing exploration system. It assumes that users
+already have a query in mind, but they do not know what is interesting about
+it. To assist them, it detects \emph{characteristic views}, that is, small sets
+of columns on which the tuples in the results are different from that in the
+rest of the database.  Thanks to these views, our explorers can understand why
+their selection is unique and make more informed exploration decisions.
 \end{abstract}
 
 \input{Content}
 \section{Acknowledgments}
 This work was supported by the Dutch national program \\COMMIT.
 \bibliographystyle{abbrv}
+\small
 \bibliography{Ziggy-demo}
 
 \end{document}
