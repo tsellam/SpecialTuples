@@ -49,18 +49,18 @@ print(CLOCK2 - CLOCK1)
 
 
 
-sapply(1:length(views$views), function(i){
-   #ziggy_talk_about(views$views[[i]], all_zig_scores)
-   theme <- paste0( views$views[[i]][[1]], collapse = ', ')
-   cat('<tr>\n     <td>' ,theme, '</td>\n</tr>\n')
-})
+#sapply(1:length(views$views), function(i){
+#   #ziggy_talk_about(views$views[[i]], all_zig_scores)
+#   theme <- paste0( views$views[[i]][[1]], collapse = ', ')
+#   cat('<tr>\n     <td>' ,theme, '</td>\n</tr>\n')
+#})#
 
 
-library(GGally)
-ggpairs(data = data_file,
-        columns = c('NumIlleg','NumStreet',
-                    'PctUsePubTrans','ViolentCrimesPerPop'),
-        upper = list('continuous'='points'),
-        mapping = ggplot2::aes(color = selection)
-        ) +
-theme_few()
+#ibrary(GGally)
+#ggpairs(data = data_file,
+#        columns = c('NumIlleg','NumStreet',
+#                    'PctUsePubTrans','ViolentCrimesPerPop'),
+#        upper = list('continuous'='points'),
+#        mapping = ggplot2::aes(color = selection)
+#        ) +
+#theme_few()

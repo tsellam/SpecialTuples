@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm -rf *.csv *.arff data.zip*
+#rm -rf *.csv *.arff data.zip*
 
 ##########################
 # Big Files from the UCI #
