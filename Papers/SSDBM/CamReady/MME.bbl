@@ -1,0 +1,145 @@
+\begin{thebibliography}{10}
+
+
+
+\bibitem{abouzied2012dataplay}
+A.~Abouzied, J.~Hellerstein, and A.~Silberschatz.
+\newblock Dataplay: interactive tweaking and example-driven correction of
+  graphical database queries.
+\newblock In {\em USIT}, pages 207--218. ACM, 2012.
+
+\bibitem{Agrawal1998}
+R.~Agrawal, J.~Gehrke, D.~Gunopulos, and P.~Raghavan.
+\newblock Automatic subspace clustering of high dimensional data for data
+  mining applications.
+\newblock In {\em Proc. SIGMOD}, pages 94--105, 1998.
+
+\bibitem{angiulli2009detecting}
+F.~Angiulli, F.~Fassetti, and L.~Palopoli.
+\newblock Detecting outlying properties of exceptional objects.
+\newblock {\em ACM TODS}, 2009.
+
+\bibitem{cohen1977statistical}
+J.~Cohen.
+\newblock {\em Statistical power analysis for the behavioral sciences}.
+\newblock Lawrence Erlbaum Associates, 1977.
+
+\bibitem{dimitriadou2014explore}
+K.~Dimitriadou, O.~Papaemmanouil, and Y.~Diao.
+\newblock Explore-by-example: An automatic query steering framework for
+  interactive data exploration.
+\newblock In {\em Proc. SIGMOD}, pages 517--528, 2014.
+
+\bibitem{duan2014mining}
+L.~Duan, G.~Tang, J.~Pei, J.~Bailey, A.~Campbell, and C.~Tang.
+\newblock Mining outlying aspects on numeric data.
+\newblock {\em Data Mining and Knowl. Discovery}, pages 1--36, 2014.
+
+\bibitem{fisher1915frequency}
+R.~A. Fisher.
+\newblock Frequency distribution of the values of the correlation coefficient
+  in samples from an indefinitely large population.
+\newblock {\em Biometrika}, 1915.
+
+\bibitem{guyon2003introduction}
+I.~Guyon and A.~Elisseeff.
+\newblock An introduction to variable and feature selection.
+\newblock {\em The Journal of Machine Learning Research}, pages 1157--1182,
+  2003.
+
+\bibitem{knorr1999finding}
+E.~M. Knorr and R.~T. Ng.
+\newblock Finding intensional knowledge of distance-based outliers.
+\newblock In {\em Proc. VLDB}, pages 211--222, 1999.
+
+\bibitem{li2014constructing}
+F.~Li and H.~Jagadish.
+\newblock Constructing an interactive natural language interface for relational
+  databases.
+\newblock In {\em Proc. VLDB}, pages 73--84, 2014.
+
+\bibitem{liarou2014dbtouch}
+E.~Liarou and S.~Idreos.
+\newblock dbtouch in action database kernels for touch-based data exploration.
+\newblock In {\em Proc. ICDE}, pages 1262--1265, 2014.
+
+\bibitem{Lloyd2014ABCD}
+J.~R. Lloyd, D.~Duvenaud, R.~Grosse, J.~B. Tenenbaum, and Z.~Ghahramani.
+\newblock Automatic construction and {Natural-Language} description of
+  nonparametric regression models.
+\newblock In {\em AAAI}, 2014.
+
+\bibitem{loekito2008mining}
+E.~Loekito and J.~Bailey.
+\newblock Mining influential attributes that capture class and group contrast
+  behaviour.
+\newblock In {\em Proc. CIKM}, pages 971--980, 2008.
+
+\bibitem{nguyen20134s}
+H.~V. Nguyen, E.~Muller, and K.~Bohm.
+\newblock 4s: Scalable subspace search scheme overcoming traditional apriori
+  processing.
+\newblock In {\em IEEE Big Data}, pages 359--367, 2013.
+
+\bibitem{patel1996handbook}
+J.~K. Patel and C.~B. Read.
+\newblock {\em Handbook of the normal distribution}, pages 204--205.
+\newblock CRC Press, 1996.
+
+\bibitem{pebay2008formulas}
+P.~P{\'e}bay.
+\newblock Formulas for robust, one-pass parallel computation of covariances and
+  arbitrary-order statistical moments.
+\newblock {\em Tech. report, Sandia National Laboratories}, 2008.
+
+\bibitem{sellam2013meet}
+T.~Sellam and M.~L. Kersten.
+\newblock Meet charles, big data query advisor.
+\newblock In {\em CIDR}, 2013.
+
+\bibitem{Sellam2015Semi}
+T.~Sellam, E.~M\"{u}ller, and M.~Kersten.
+\newblock Semi-automated exploration of data warehouses.
+\newblock In {\em proc. CIKM}, pages 1321--1330, 2015.
+
+\bibitem{vartak2015see}
+M.~Vartak, S.~Rahman, S.~Madden, A.~Parameswaran, and N.~Polyzotis.
+\newblock Seedb: Efficient data-driven visualization recommendations to support
+  visual analytics.
+\newblock {\em Proc. VLDB}, pages 2182--2193, 2015.
+
+\bibitem{vreeken2007characterising}
+J.~Vreeken, M.~Van~Leeuwen, and A.~Siebes.
+\newblock Characterising the difference.
+\newblock In {\em Proc. SIGKDD}, pages 765--774, 2007.
+
+\bibitem{wasserman2013all}
+L.~Wasserman.
+\newblock {\em All of statistics: a concise course in statistical inference}.
+\newblock Springer, 2013.
+
+\bibitem{webb2008detecting}
+G.~I. Webb, S.~Butler, and D.~Newlands.
+\newblock On detecting differences between groups.
+\newblock In {\em Proc. SIGKDD}, pages 256--265, 2003.
+
+\bibitem{xie2010max}
+Y.~Xie and P.~S. Yu.
+\newblock Max-clique: a top-down graph-based approach to frequent pattern
+  mining.
+\newblock In {\em ICDM}, pages 1139--1144, 2010.
+
+\bibitem{zhang2006detecting}
+J.~Zhang and H.~Wang.
+\newblock Detecting outlying subspaces for high-dimensional data: the new task,
+  algorithms, and performance.
+\newblock {\em Knowledge and information systems}, pages 333--355, 2006.
+
+\bibitem{zhu2006automatic}
+M.~Zhu and A.~Ghodsi.
+\newblock Automatic dimensionality selection from the scree plot via the use of
+  profile likelihood.
+\newblock {\em Computational Statistics \& Data Analysis}, pages 918--930,
+  2006.
+
+\end{thebibliography}
