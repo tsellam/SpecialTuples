@@ -2,7 +2,6 @@ library(foreign)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-#library(compiler)
 
 MIN_SPARSITY <- 0.25
 
@@ -15,7 +14,9 @@ zig_coefficients <- c(
 )
 
 
-
+#####################################################
+# Functions for quick inspection of Ziggy's results #
+#####################################################
 check_group <- function(col_set, dataset = data){
 
    types <- sapply(col_set, function(col) class(dataset[,col] ))
@@ -1238,33 +1239,3 @@ ziggy_comment <- function(data, selection, K, D,
 
 
 }
-
-# ############
-# # WORKFLOW #
-# ############
-# data <- read.arff("~/Data/Files/crime/communities.arff")
-# data_check <- data
-#
-# for (j in 20:25)
-#    data[[j]] <- as.character(cut(data[[j]], 3))
-# selection <- data$ViolentCrimesPerPop > 0.7
-#
-# classes <- sapply(data, function(col) class(col))
-# #data <- data[, !classes %in% c('factor','character')]
-# #data <- data[, !classes %in% c('numeric')]
-#
-# data  <- preprocess(data)
-# CLOCK1 <- proc.time()['elapsed']
-#
-# offline_uni_stats   <- compute_uni_stats(data)
-# offline_bi_stats <- compute_bi_stats(data, offline_uni_stats)
-# zig_components <- zig_score(selection, data, offline_uni_stats,
-#                             offline_bi_stats)
-# zig_scores <- zig_aggregate(zig_components, zig_coefficients)
-# views <- search_views(15, 5, zig_scores, offline_bi_stats,
-#                       hard_dep_threshold = 0.8)
-#
-# print(views)
-#
-# CLOCK2 <- proc.time()['elapsed']
-# print(CLOCK2 - CLOCK1)
