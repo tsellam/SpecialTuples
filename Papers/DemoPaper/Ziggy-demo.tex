@@ -1,0 +1,77 @@
+\documentclass{vldb}
+
+
+
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+\usepackage{balance}
+\usepackage{amsmath}
+%\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{ntheorem}
+
+
+\usepackage{hyperref}
+
+
+\newtheorem*{problem}{Problem}
+
+\newcommand{\mf}{\ensuremath{\mathfrak}}
+\newcommand{\rv}{\ensuremath{\mathcal}}
+\newcommand{\rb}{\ensuremath{\mathbf}}
+
+
+\newenvironment{itemize0}
+{ 
+    \begin{itemize}
+        \setlength{\itemsep}{1pt}
+        \setlength{\parskip}{1pt}
+        \setlength{\parsep}{1pt} 
+}
+{ \end{itemize}  }
+
+\begin{document}
+
+\title{Ziggy: Characterizing Query Results for Data Explorers}
+
+\numberofauthors{2}
+\author{
+\alignauthor
+    Thibault Sellam\\
+    \affaddr{CWI}\\
+    \affaddr{the Netherlands}
+    \email{thibault.sellam@cwi.nl}
+\alignauthor
+Martin Kersten\\
+    \affaddr{CWI}\\
+    \affaddr{the Netherlands}
+    \email{martin.kersten@cwi.nl}
+}
+
+
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+Data exploration has received much attention during the last few years. The aim
+is to learn interesting new facts from a possibly unfamiliar data set.
+Typically, explorers operate by trial and error: they write a query, inspect
+the results and refine their specifications accordingly. In this demo proposal,
+we present Ziggy, a system to help them understand their query results. Ziggy's
+aim is to complement an existing exploration system. It assumes that users
+already have a query in mind, but they do not know what is interesting about
+it. To assist them, it detects \emph{characteristic views}, that is, small sets
+of columns on which the tuples in the results are different from those in the
+rest of the database.  Thanks to these views, our explorers can understand why 
+their selection is unique and make more informed exploration decisions.
+\end{abstract}
+
+\input{Content}
+\section{Acknowledgments}
+This work was supported by the Dutch national program \\COMMIT.
+\bibliographystyle{abbrv}
+\small
+\bibliography{Ziggy-demo}
+
+\end{document}
